@@ -138,7 +138,8 @@ class data:
     cargo_capacity = [0.00]
     cargo_capacity_units = ["tonnes"]
     personnel = [15]
-    powering_margin = [25.00]
+    sea_margin = [15.00] #Extra power on top of that required for calm water propulsion. This yields the Service Propulsion Point (SP).
+    engine_margin = [10.00] # Extra power on top of that required for (SP). This yields Maximum Continuous Rated Power (MCR).    
     propulsion_type = ["fixed pitch propeller"]
     propulsors = [1]
     set_beam_or_draught = ["beam"]
@@ -184,17 +185,28 @@ class data:
     hold_width_multiple = [0.000] # for unitised cargo (or cabins)
     primary_structure_density_multiplier = [1.00]
     secondary_structure_density_multiplier = [1.00]
+    available_deck_length = [0] # for sails     
+    
     propeller_blades = [4]
     cpp_efficiency_relative_to_fpp = [98.5] # %
+    propeller_design_rpm = [0] # rpm, set to 0 for 2-stroke engine, this means same speed as engine    
+    pod_correction = [0.97] # correction from FPP for using CPP or FPP pod, taken from pages 367 and 368 of Ship Resistance and Propulsion, 3% decrease in propeller efficiency due to increase in boss diameter     
+    engine_design_rpm =[90]    
     direct_drive_efficiency = [99.5] # %
     mechanical_transmission_efficiency = [98.5] # %
+    light_running_factor = [0] # [%] Extra revolutions required to account for fouling of hull. This yields the light propeller curve (trials conditions).     
     waste_heat_recovery_fitted = [0] # checkbox
+    whr_plant_energy_type_output = ["None"] # can be "None", "Heat" or "Electrical and Heat"    
+    include_whr_in_design_phase = [1] # can be 0 so that the waste heat recovery plant is not used at the design speed in the design process    
+    whr_prioritise_power_demand = [0] # normally waste heat recovery will be used to meet heat demands first but this can be overridden    
     waste_heat_recovery_design_point = [75] # % of MCR
     shaft_generator_fitted = [0] # checkbox
+    include_shaft_generator_in_design_phase = [1] # can be 0 so that the shaft generator is sized but does not consider that it may not be used at design speed    
     shaft_generator_maximum_power = [0] # kW (0 for not fitted)
     shaft_generator_pto_efficiency = [96.2] # % ABB
     shaft_generator_pti_efficiency = [93.3] # % ABB motor efficiency x0.98 transmission efficiency
     electrical_propulsion_efficiency = [94.7] # from ABB brochure, maximum size x0.99, increases with motor size
+    redundant_auxiliary_engines = [1]
     maximum_electrical_power_available = [1400] # kW
     maximum_heat_power_available = [0] # kW
     
@@ -325,7 +337,8 @@ class actions:
         data.cargo_capacity[0] = 0.00
         data.cargo_capacity_units[0] = "tonnes"
         data.personnel[0] = 15
-        data.powering_margin[0] = 25.00
+        data.sea_margin[0] = 15.00
+        data.engine_margin[0] = 10.00        
         data.propulsion_type[0] = "fixed pitch propeller"
         data.propulsors[0] = 1
         data.set_beam_or_draught[0] = "beam"
@@ -371,17 +384,28 @@ class actions:
         data.hold_width_multiple[0] = 0.000
         data.primary_structure_density_multiplier[0] = 1.00
         data.secondary_structure_density_multiplier[0] = 1.00
+        data.available_deck_length[0] = 0
+        
         data.propeller_blades[0] = 4
         data.cpp_efficiency_relative_to_fpp[0] = 98.5 # %
+        data.propeller_design_rpm[0] = 0 # rpm, set to 0 for 2-stroke engine, this means same speed as engine        
+        data.pod_correction[0] = 0.97        
+        data.engine_design_rpm[0] = 90        
         data.direct_drive_efficiency[0] = 99.5 # %
         data.mechanical_transmission_efficiency[0] = 98.5 # %
+        data.light_running_factor[0] = 0        
         data.waste_heat_recovery_fitted[0] = 0 # checkbox
+        data.whr_plant_energy_type_output[0] = "None"        
+        data.include_whr_in_design_phase[0] = 1        
+        data.whr_prioritise_power_demand[0] = 1        
         data.waste_heat_recovery_design_point[0] = 75 # % of MCR
         data.shaft_generator_fitted[0] = 0 # checkbox
+        data.include_shaft_generator_in_design_phase[0] = 1        
         data.shaft_generator_maximum_power[0] = 0 # kW (0 for not fitted)
         data.shaft_generator_pto_efficiency[0] = 96.2 # % ABB
         data.shaft_generator_pti_efficiency[0] = 93.3 # % ABB motor efficiency x0.98 transmission efficiency
         data.electrical_propulsion_efficiency[0] = 94.7 # from ABB brochure, maximum size x0.99, increases with motor size
+        data.redundant_auxiliary_engines[0] = 1        
         data.maximum_electrical_power_available[0] = 1400 # kW
         data.maximum_heat_power_available[0] = 0 # kW
         
@@ -449,7 +473,8 @@ class actions:
         data.cargo_capacity[0] = 0.00
         data.cargo_capacity_units[0] = ""
         data.personnel[0] = 0
-        data.powering_margin[0] = 0.00
+        data.sea_margin[0] = 0.00
+        data.engine_margin[0] = 0.00        
         data.propulsion_type[0] = ""
         data.propulsors[0] = 0
         data.set_beam_or_draught[0] = ""
@@ -495,17 +520,28 @@ class actions:
         data.hold_width_multiple[0] = 0.000
         data.primary_structure_density_multiplier[0] = 1.00
         data.secondary_structure_density_multiplier[0] = 1.00
+        data.available_deck_length[0] = 0
+        
         data.propeller_blades[0] = 0
         data.cpp_efficiency_relative_to_fpp[0] = 98.5
+        data.propeller_design_rpm[0] = 0 
+        data.pod_correction[0] = 0        
+        data.engine_design_rpm[0] = 0
         data.direct_drive_efficiency[0] = 99.5
         data.mechanical_transmission_efficiency[0] = 98.5
+        data.light_running_factor[0] = 0        
         data.waste_heat_recovery_fitted[0] = 0
+        data.whr_plant_energy_type_output[0] = ""          
+        data.include_whr_in_design_phase[0] = 0        
+        data.whr_prioritise_power_demand[0] = 0        
         data.waste_heat_recovery_design_point[0] = 75
         data.shaft_generator_fitted[0] = 0
+        data.include_shaft_generator_in_design_phase[0] = 0        
         data.shaft_generator_maximum_power[0] = 0
         data.shaft_generator_pto_efficiency[0] = 96.2
         data.shaft_generator_pti_efficiency[0] = 93.3
         data.electrical_propulsion_efficiency[0] = 94.7
+        data.redundant_auxiliary_engines[0] = 1
         data.maximum_electrical_power_available[0] = 0
         data.maximum_heat_power_available[0] = 0
         
@@ -587,7 +623,8 @@ class actions:
             data.personnel[0] = 26
         # from "An Analysis of Crewing Levels: Findings from the SIRC Global Labour Market Survey"
         # https://orca-mwe.cf.ac.uk/64731/1/Analysis%20of%20crewing%20levels.pdf
-        data.powering_margin[0] = 25.00
+        data.sea_margin[0] = 15.00
+        data.engine_margin[0] = 10.00
         data.propulsion_type[0] = "fixed pitch propeller"
         data.propulsors[0] = 1 # might be 2 for larger container ships
         data.set_beam_or_draught[0] = "beam"
@@ -639,21 +676,31 @@ class actions:
         data.superstructure_position[0] = 1.00
         data.superstructure_length_in_compartments[0] = 1.00
         data.engine_room_position[0] = 1.00
-        # UP TO HERE
         data.hold_width_multiple[0] = 0.00 # for unitised cargo (or cabins)
         data.primary_structure_density_multiplier[0] = 1.00
         data.secondary_structure_density_multiplier[0] = 1.00
+        data.available_deck_length[0] = 0
+        
         data.propeller_blades[0] = 4
         data.cpp_efficiency_relative_to_fpp[0] = 98.5
+        data.propeller_design_rpm[0] = 0
+        data.pod_correction[0] = 0.97        
+        data.engine_design_rpm[0] = 90        
         data.direct_drive_efficiency[0] = 99.5
         data.mechanical_transmission_efficiency[0] = 98.5
+        data.light_running_factor[0] = 0        
         data.waste_heat_recovery_fitted[0] = 0
+        data.whr_plant_energy_type_output[0] = ""          
+        data.include_whr_in_design_phase[0] = 0        
+        data.whr_prioritise_power_demand[0] = 1        
         data.waste_heat_recovery_design_point[0] = 75
         data.shaft_generator_fitted[0] = 1
+        data.include_shaft_generator_in_design_phase[0] = 1        
         data.shaft_generator_maximum_power[0] = 0
         data.shaft_generator_pto_efficiency[0] = 96.2
         data.shaft_generator_pti_efficiency[0] = 93.3
         data.electrical_propulsion_efficiency[0] = 94.7
+        data.redundant_auxiliary_engines[0] = 1        
         data.maximum_electrical_power_available[0] = 0
         data.maximum_heat_power_available[0] = 0
         
@@ -735,7 +782,8 @@ class actions:
             data.personnel[0] = 26
         # from "An Analysis of Crewing Levels: Findings from the SIRC Global Labour Market Survey"
         # https://orca-mwe.cf.ac.uk/64731/1/Analysis%20of%20crewing%20levels.pdf
-        data.powering_margin[0] = 25.00
+        data.sea_margin[0] = 15.00
+        data.engine_margin[0] = 10.00
         data.propulsion_type[0] = "fixed pitch propeller"
         data.propulsors[0] = 1
         data.set_beam_or_draught[0] = "beam"
@@ -787,21 +835,31 @@ class actions:
         data.superstructure_position[0] = 1.00
         data.superstructure_length_in_compartments[0] = 1.00
         data.engine_room_position[0] = 1.00
-        # UP TO HERE
         data.hold_width_multiple[0] = 0.00 # CHECK IN PARAMARINE for unitised cargo (or cabins) THIS COULD ALSO BE FOR NON UNITISED CARGO??? SHOULD BE MEASURED AT AMIDSHIPS
         data.primary_structure_density_multiplier[0] = 1.00
         data.secondary_structure_density_multiplier[0] = 1.00
+        data.available_deck_length[0] = 0
+        
         data.propeller_blades[0] = 4
         data.cpp_efficiency_relative_to_fpp[0] = 98.5
+        data.propeller_design_rpm[0] = 0 
+        data.pod_correction[0] = 0.97        
+        data.engine_design_rpm[0] = 90         
         data.direct_drive_efficiency[0] = 99.5
         data.mechanical_transmission_efficiency[0] = 98.5
+        data.light_running_factor[0] = 0        
         data.waste_heat_recovery_fitted[0] = 0
+        data.whr_plant_energy_type_output[0] = ""          
+        data.include_whr_in_design_phase[0] = 0        
+        data.whr_prioritise_power_demand[0] = 0        
         data.waste_heat_recovery_design_point[0] = 75
         data.shaft_generator_fitted[0] = 1
+        data.include_shaft_generator_in_design_phase[0] = 1        
         data.shaft_generator_maximum_power[0] = 0
         data.shaft_generator_pto_efficiency[0] = 96.2
         data.shaft_generator_pti_efficiency[0] = 93.3
         data.electrical_propulsion_efficiency[0] = 94.7
+        data.redundant_auxiliary_engines[0] = 1        
         data.maximum_electrical_power_available[0] = 0
         data.maximum_heat_power_available[0] = 0
         
@@ -869,7 +927,8 @@ class actions:
         cargo_capacity_entry.input.set(data.cargo_capacity[0])
         cargo_capacity_units_entry.input.set(data.cargo_capacity_units[0])
         personnel_entry.input.set(data.personnel[0])
-        powering_margin_entry.input.set(data.powering_margin[0])
+        sea_margin_entry.input.set(data.sea_margin[0])
+        engine_margin_entry.input.set(data.engine_margin[0])
         propulsion_type_entry.input.set(data.propulsion_type[0])
         propulsors_entry.input.set(data.propulsors[0])
         set_beam_or_draught_entry.input.set(data.set_beam_or_draught[0])
@@ -915,17 +974,28 @@ class actions:
         hold_width_multiple_entry.input.set(data.hold_width_multiple[0])
         primary_structure_density_multiplier_entry.input.set(data.primary_structure_density_multiplier[0])
         secondary_structure_density_multiplier_entry.input.set(data.secondary_structure_density_multiplier[0])
+        data.available_deck_length_entry.input.set(data.available_deck_length[0])
+        
         propeller_blades_entry.input.set(data.propeller_blades[0])
         cpp_efficiency_relative_to_fpp_entry.input.set(data.cpp_efficiency_relative_to_fpp[0])
+        propeller_design_rpm_entry.input.set(data.propeller_design_rpm[0])
+        pod_correction_entry.input.set(data.pod_correction[0])    
+        engine_design_rpm_entry.input.set(data.engine_design_rpm[0])         
         direct_drive_efficiency_entry.input.set(data.direct_drive_efficiency[0])
         mechanical_transmission_efficiency_entry.input.set(data.mechanical_transmission_efficiency[0])
+        light_running_factor_entry.input.set(data.light_running_factor[0])        
         waste_heat_recovery_fitted_entry.input.set(data.waste_heat_recovery_fitted[0])
+        whr_plant_energy_type_output_entry.input.set(data.whr_plant_energy_type_output[0])
+        include_whr_in_design_phase_entry.input.set(data.include_whr_in_design_phase[0])        
+        whr_prioritise_power_demand_entry.input.set(data.whr_prioritise_power_demand[0])        
         waste_heat_recovery_design_point_entry.input.set(data.waste_heat_recovery_design_point[0])
         shaft_generator_fitted_entry.input.set(data.shaft_generator_fitted[0])
+        include_shaft_generator_in_design_phase_entry.input.set(data.include_shaft_generator_in_design_phase[0])        
         shaft_generator_maximum_power_entry.input.set(data.shaft_generator_maximum_power[0])
         shaft_generator_pto_efficiency_entry.input.set(data.shaft_generator_pto_efficiency[0])
         shaft_generator_pti_efficiency_entry.input.set(data.shaft_generator_pti_efficiency[0])
         electrical_propulsion_efficiency_entry.input.set(data.electrical_propulsion_efficiency[0])
+        redundant_auxiliary_engines_entry.input.set(data.redundant_auxiliary_engines[0])        
         maximum_electrical_power_available_entry.input.set(data.maximum_electrical_power_available[0])
         maximum_heat_power_available_entry.input.set(data.maximum_heat_power_available[0])
         
@@ -1034,7 +1104,8 @@ class actions:
             rundata.cargo_capacity[run] = cargo_capacity_entry.input.get()
             rundata.cargo_capacity_units[run] = cargo_capacity_units_entry.input.get()
             rundata.personnel[run] = personnel_entry.input.get()
-            rundata.powering_margin[run] = powering_margin_entry.input.get()
+            rundata.sea_margin[run] = sea_margin_entry.input.get()
+            rundata.engine_margin[run] = engine_margin_entry.input.get()
             rundata.propulsion_type[run] = propulsion_type_entry.input.get()
             rundata.propulsors[run] = propulsors_entry.input.get()
             rundata.set_beam_or_draught[run] = set_beam_or_draught_entry.input.get()
@@ -1080,17 +1151,28 @@ class actions:
             rundata.hold_width_multiple[run] = hold_width_multiple_entry.input.get()
             rundata.primary_structure_density_multiplier[run] = primary_structure_density_multiplier_entry.input.get()
             rundata.secondary_structure_density_multiplier[run] = secondary_structure_density_multiplier_entry.input.get()
+            runddata.available_deck_length[run] = data.available_deck_length_entry.input.get()            
+            
             rundata.propeller_blades[run] = propeller_blades_entry.input.get()
             rundata.cpp_efficiency_relative_to_fpp[run] = cpp_efficiency_relative_to_fpp_entry.input.get()
+            rundata.propeller_design_rpm[run] = propeller_design_rpm_entry.input.get()
+            rundata.pod_correction[run] = pod_correction_entry.input.get()            
+            rundata.engine_design_rpm[run] = engine_design_rpm_entry.input.get()              
             rundata.direct_drive_efficiency[run] = direct_drive_efficiency_entry.input.get()
             rundata.mechanical_transmission_efficiency[run] = mechanical_transmission_efficiency_entry.input.get()
+            rundata.light_running_factor[run] = light_running_factor_entry.input.get()            
             rundata.waste_heat_recovery_fitted[run] = waste_heat_recovery_fitted_entry.input.get()
+            rundata.whr_plant_energy_type_output[run] = whr_plant_energy_type_output_entry.input.get()            
+            rundata.include_whr_in_design_phase[run] = include_whr_in_design_phase_entry.input.get()            
+            rundata.whr_prioritise_power_demand[run] = whr_prioritise_power_demand_entry.input.get()           
             rundata.waste_heat_recovery_design_point[run] = waste_heat_recovery_design_point_entry.input.get()
             rundata.shaft_generator_fitted[run] = shaft_generator_fitted_entry.input.get()
+            rundata.include_shaft_generator_in_design_phase[run] = include_shaft_generator_in_design_phase_entry.input.get()            
             rundata.shaft_generator_maximum_power[run] = shaft_generator_maximum_power_entry.input.get()
             rundata.shaft_generator_pto_efficiency[run] = shaft_generator_pto_efficiency_entry.input.get()
             rundata.shaft_generator_pti_efficiency[run] = shaft_generator_pti_efficiency_entry.input.get()
             rundata.electrical_propulsion_efficiency[run] = electrical_propulsion_efficiency_entry.input.get()
+            rundata.redundant_auxiliary_engines[run] = redundant_auxiliary_engines_entry.input.get()            
             rundata.maximum_electrical_power_available[run] = maximum_electrical_power_available_entry.input.get()
             rundata.maximum_heat_power_available[run] = maximum_heat_power_available_entry.input.get()
             
@@ -1153,7 +1235,8 @@ class actions:
             rundata.cargo_capacity.append(cargo_capacity_entry.input.get())
             rundata.cargo_capacity_units.append(cargo_capacity_units_entry.input.get())
             rundata.personnel.append(personnel_entry.input.get())
-            rundata.powering_margin.append(powering_margin_entry.input.get())
+            rundata.sea_margin.append(sea_margin_entry.input.get())
+            rundata.engine_margin.append(engine_margin_entry.input.get())
             rundata.propulsion_type.append(propulsion_type_entry.input.get())
             rundata.propulsors.append(propulsors_entry.input.get())
             rundata.set_beam_or_draught.append(set_beam_or_draught_entry.input.get())
@@ -1199,17 +1282,28 @@ class actions:
             rundata.hold_width_multiple.append(hold_width_multiple_entry.input.get())
             rundata.primary_structure_density_multiplier.append(primary_structure_density_multiplier_entry.input.get())
             rundata.secondary_structure_density_multiplier.append(secondary_structure_density_multiplier_entry.input.get())
+            rundata.available_deck_length.append(available_deck_length_entry.input.get())            
+            
             rundata.propeller_blades.append(propeller_blades_entry.input.get())
             rundata.cpp_efficiency_relative_to_fpp.append(cpp_efficiency_relative_to_fpp_entry.input.get())
+            rundata.propeller_design_rpm.append(propeller_design_rpm_entry.input.get())            
+            rundata.pod_correction.append(pod_correction_entry.input.get())            
+            rundata.engine_design_rpm.append(engine_design_rpm_entry.input.get())            
             rundata.direct_drive_efficiency.append(direct_drive_efficiency_entry.input.get())
             rundata.mechanical_transmission_efficiency.append(mechanical_transmission_efficiency_entry.input.get())
+            rundata.light_running_factor.append(data.light_running_factor_entry.input.get())            
             rundata.waste_heat_recovery_fitted.append(waste_heat_recovery_fitted_entry.input.get())
+            rundata.whr_plant_energy_type_output.append(whr_plant_energy_type_output_entry.input.get())            
+            rundata.include_whr_in_design_phase.append(include_whr_in_design_phase_entry.input.get())            
+            rundata.whr_prioritise_power_demand.append(whr_prioritise_power_demand_entry.input.get())            
             rundata.waste_heat_recovery_design_point.append(waste_heat_recovery_design_point_entry.input.get())
             rundata.shaft_generator_fitted.append(shaft_generator_fitted_entry.input.get())
+            rundata.include_shaft_generator_in_design_phase_entry.append(include_shaft_generator_in_design_phase_entry.input.get())            
             rundata.shaft_generator_maximum_power.append(shaft_generator_maximum_power_entry.input.get())
             rundata.shaft_generator_pto_efficiency.append(shaft_generator_pto_efficiency_entry.input.get())
             rundata.shaft_generator_pti_efficiency.append(shaft_generator_pti_efficiency_entry.input.get())
             rundata.electrical_propulsion_efficiency.append(electrical_propulsion_efficiency_entry.input.get())
+            rundata.redundant_auxiliary_engines_entry.append(redundant_auxiliary_engines_entry.input.get())            
             rundata.maximum_electrical_power_available.append(maximum_electrical_power_available_entry.input.get())
             rundata.maximum_heat_power_available.append(maximum_heat_power_available_entry.input.get())
             
@@ -1406,9 +1500,12 @@ propulsion_type_entry = labellist(setupframeleft, "propulsion type: ",
                                   data.propulsion_type[run])
 propulsors_entry = labellist(setupframeright, "propulsors: ", IntVar(),
                              "1 2", data.propulsors[run])
-powering_margin_entry = labelentry(setupframeleft,
-                                   "powering margin (on MCR): ", DoubleVar(),
-                                    data.powering_margin[run], "% ")
+sea_margin_entry = labelentry(setupframeleft,
+                                   "sea margin (on MCR): ", DoubleVar(),
+                                    data.sea_margin[run], "% ")
+engine_margin_entry = labelentry(setupframeleft,
+                                   "engine margin (on MCR): ", DoubleVar(),
+                                    data.engine_margin[run], "% ")
 midship_coefficient_entry = labelentry(setupframeright,
                                        "midship coefficient: ",
                                        DoubleVar(), data.midship_coefficient[run],
@@ -1447,6 +1544,7 @@ entrytabs.pack(side="top")
 entrytab2 = ttk.Frame(entrytabs)
 entrytab3 = ttk.Frame(entrytabs)
 entrytab4 = ttk.Frame(entrytabs)
+entrytab5 = ttk.Frame(entrytabs)
 entrytabs.add(entrytab2, text="Hull Generation")
 entrytab2left = ttk.Frame(entrytab2)
 entrytab2left.pack(side="left", anchor="n")
@@ -1522,7 +1620,7 @@ water_density_entry = labelentry(entrytab2right,
                             "water density: ",
                             DoubleVar(), data.water_density[run],
                             "te/m3")
-entrytabs.add(entrytab3, text="Layout and Machinery")
+entrytabs.add(entrytab3, text="Layout")
 entrytab3left = ttk.Frame(entrytab3)
 entrytab3left.pack(side="left", anchor="n")
 entrytab3right = ttk.Frame(entrytab3)
@@ -1552,57 +1650,95 @@ superstructure_length_in_compartments_entry = labelentry(entrytab3left,
                         "superstructure length (in compartments): ",
                         DoubleVar(),
                         data.superstructure_length_in_compartments[run], "")
-engine_room_position_entry = labelentry(entrytab3right,
+engine_room_position_entry = labelentry(entrytab3left,
                                     "engine room compartment from aft: ",
                                     DoubleVar(),
                                     data.engine_room_position[run], "")
-hold_width_multiple_entry = labelentry(entrytab3right,
+hold_width_multiple_entry = labelentry(entrytab3left,
                                 "width of unitised cargo (if applicable): ",
                                 DoubleVar(), data.hold_width_multiple[run], "")
-primary_structure_density_multiplier_entry = labelentry(entrytab3right,
+primary_structure_density_multiplier_entry = labelentry(entrytab3left,
                         "primary structure density multiplier: ", DoubleVar(),
                         data.primary_structure_density_multiplier[run], "")
-secondary_structure_density_multiplier_entry = labelentry(entrytab3right,
+secondary_structure_density_multiplier_entry = labelentry(entrytab3left,
                         "secondary structure density multiplier: ", DoubleVar(),
                         data.secondary_structure_density_multiplier[run], "")
-propeller_blades_entry = labelentry(entrytab3right, "number of propeller blades: ",
+available_deck_length_entry = labelentry(entrytab3right,
+                        "availalbe length on deck for sails: ", DoubleVar(),
+                        data.available_deck_length[run], "m ")
+
+entrytabs.add(entrytab5, text="Machinery")
+entrytab5left = ttk.Frame(entrytab5)
+entrytab5left.pack(side="left", anchor="n")
+entrytab5right = ttk.Frame(entrytab5)
+entrytab5right.pack(side="left", anchor="n")
+propeller_blades_entry = labelentry(entrytab5right, "number of propeller blades: ",
                                     DoubleVar(), data.propeller_blades[run], "")
-cpp_efficiency_relative_to_fpp_entry = labelentry(entrytab3right,
+cpp_efficiency_relative_to_fpp_entry = labelentry(entrytab5right,
                                 "CPP/FPP efficiency: ", DoubleVar(),
                                 data.cpp_efficiency_relative_to_fpp[run], "% ")
-direct_drive_efficiency_entry = labelentry(entrytab3right,
+propeller_design_rpm_entry = labelentry(entrytab5right,
+                                "propeller design rpm: ", DoubleVar(),
+                                data.propeller_design_rpm[run], "RPM ")
+pod_correction_entry = labelentry(entrytab5right,
+                                "pod FPP/CPP: ", DoubleVar(),
+                                data.pod_correction[run], " ")
+engine_design_rpm_entry = labelentry(entrytab5right,
+                                "engine design rpm: ", DoubleVar(),
+                                data.engine_design_rpm[run], "RPM ")
+direct_drive_efficiency_entry = labelentry(entrytab5right,
                                 "direct drive efficiency: ", DoubleVar(),
                                 data.direct_drive_efficiency[run], "% ")
-mechanical_transmission_efficiency_entry = labelentry(entrytab3right,
+mechanical_transmission_efficiency_entry = labelentry(entrytab5right,
                             "mechanical transmission efficiency: ", DoubleVar(),
                             data.mechanical_transmission_efficiency[run], "% ")
-waste_heat_recovery_fitted_entry = labelcheck(entrytab3right,
+light_running_factor_entry = labelentry(entrytab5right,
+                            "light running factor: ", DoubleVar(),
+                            data.light_running_factor[run], "% ")                            
+maximum_heat_power_available_entry = labelentry(entrytab5left,
+                                    "maximum heat/boiler power: ", DoubleVar(),
+                                    data.maximum_heat_power_available[run], "kW ")
+waste_heat_recovery_fitted_entry = labelcheck(entrytab5left,
                                         "waste heat recovery installed: ",
                                         data.waste_heat_recovery_fitted[run])
-waste_heat_recovery_design_point_entry = labelentry(entrytab3right,
+whr_plant_energy_type_output_entry = labellist(entrytab5left,
+                        "whr energy type output: ", StringVar(), "{None} {Heat} {Mechanical} {Electrical}",
+                        data.whr_plant_energy_type_output[run])
+include_whr_in_design_phase_entry = labelentry(entrytab5left,
+                                        "whr in design phase?: ", DoubleVar(),
+                                        data.include_whr_in_design_phase[run], " ")
+whr_prioritise_power_demand_entry = labelentry(entrytab5left,
+                                        "prioritise power demand?: ", DoubleVar(),
+                                        data.include_whr_in_design_phase[run], " ")
+waste_heat_recovery_design_point_entry = labelentry(entrytab5left,
             "waste heat recovery design point of engine power: ", DoubleVar(),
             data.waste_heat_recovery_design_point[run], "% ")
-shaft_generator_fitted_entry = labelcheck(entrytab3left,
-                                        "shaft generator installed: ",
-                                        data.shaft_generator_fitted[run])
-shaft_generator_maximum_power_entry = labelentry(entrytab3left,
-                            "maximum shaft generator power: ", DoubleVar(),
-                            data.shaft_generator_maximum_power[run], "% ")
-shaft_generator_pto_efficiency_entry = labelentry(entrytab3left,
-                                "PTO efficiency: ", DoubleVar(),
-                                data.shaft_generator_pto_efficiency[run], "% ")
-shaft_generator_pti_efficiency_entry = labelentry(entrytab3left,
-                                "PTI efficiency: ", DoubleVar(),
-                                data.shaft_generator_pti_efficiency[run], "% ")            
-electrical_propulsion_efficiency_entry = labelentry(entrytab3left,
-            "electrical propulsion efficiency: ", DoubleVar(),
-            data.electrical_propulsion_efficiency[run], "% ")
-maximum_electrical_power_available_entry = labelentry(entrytab3right,
+redundant_auxiliary_engines_entry = labelentry(entrytab5left,
+            "redundant auxiliary engines: ", DoubleVar(),
+            data.redundant_auxiliary_engines[run], " ")
+maximum_electrical_power_available_entry = labelentry(entrytab5left,
             "maximum electrical power: ", DoubleVar(),
             data.maximum_electrical_power_available[run], "kW ")
-maximum_heat_power_available_entry = labelentry(entrytab3right,
-            "maximum heat/boiler power: ", DoubleVar(),
-            data.maximum_heat_power_available[run], "kW ")
+shaft_generator_fitted_entry = labelcheck(entrytab5left,
+                                        "shaft generator installed: ",
+                                        data.shaft_generator_fitted[run])
+include_shaft_generator_in_design_phase_entry = labelentry(entrytab5left,
+                            "shaft generator in design phase?: ", DoubleVar(),
+                            data.include_shaft_generator_in_design_phase[run], " ")
+shaft_generator_maximum_power_entry = labelentry(entrytab5left,
+                            "maximum shaft generator power: ", DoubleVar(),
+                            data.shaft_generator_maximum_power[run], "% ")
+shaft_generator_pto_efficiency_entry = labelentry(entrytab5left,
+                                "PTO efficiency: ", DoubleVar(),
+                                data.shaft_generator_pto_efficiency[run], "% ")
+shaft_generator_pti_efficiency_entry = labelentry(entrytab5left,
+                                "PTI efficiency: ", DoubleVar(),
+                                data.shaft_generator_pti_efficiency[run], "% ")            
+electrical_propulsion_efficiency_entry = labelentry(entrytab5left,
+            "electrical propulsion efficiency: ", DoubleVar(),
+            data.electrical_propulsion_efficiency[run], "% ")
+
+
 entrytabs.add(entrytab4, text="Operational Profile")
 entrytab4profile1 = ttk.Frame(entrytab4)
 entrytab4profile1.pack(side="top")
