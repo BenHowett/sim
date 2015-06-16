@@ -704,6 +704,7 @@ class actions:
         data.maximum_electrical_power_available[0] = 0
         data.maximum_heat_power_available[0] = 0
         
+<<<<<<< HEAD
         data.profile_name_1[0] = "Design Condition"
         data.profile_cargo_or_draught_1[0] = "draught"
         data.profile_location_1[0] = "operating_profiles/loaded_condition.csv"
@@ -714,6 +715,18 @@ class actions:
         data.profile_electrical_power_demand_1[0] = 0 # kW
         data.profile_heat_power_demand_1[0] = 0 # kW
         data.profile_time_1[0] = 40 # % or hours
+=======
+        data.profile_name_1[0] = ""
+        data.profile_cargo_or_draught_1[0] = ""
+        data.profile_location_1[0] = ""
+        data.profile_main_energy_source_1[0] = ""
+        data.profile_auxiliary_energy_source_1[0] = ""
+        data.profile_heat_energy_source_1[0] = ""
+        data.profile_shaft_generator_1[0] = ""
+        data.profile_electrical_power_demand_1[0] = 0
+        data.profile_heat_power_demand_1[0] = 0
+        data.profile_time_1[0] = 0
+>>>>>>> 4b14c27b8cb0d399dfe574854db24c2c894e62d6
         data.profile_name_2[0] = ""
         data.profile_cargo_or_draught_2[0] = ""
         data.profile_location_2[0] = ""
@@ -974,7 +987,11 @@ class actions:
         hold_width_multiple_entry.input.set(data.hold_width_multiple[0])
         primary_structure_density_multiplier_entry.input.set(data.primary_structure_density_multiplier[0])
         secondary_structure_density_multiplier_entry.input.set(data.secondary_structure_density_multiplier[0])
+<<<<<<< HEAD
         available_deck_length_entry.input.set(data.available_deck_length[0])
+=======
+        data.available_deck_length_entry.input.set(data.available_deck_length[0])
+>>>>>>> 4b14c27b8cb0d399dfe574854db24c2c894e62d6
         
         propeller_blades_entry.input.set(data.propeller_blades[0])
         cpp_efficiency_relative_to_fpp_entry.input.set(data.cpp_efficiency_relative_to_fpp[0])
@@ -1151,7 +1168,11 @@ class actions:
             rundata.hold_width_multiple[run] = hold_width_multiple_entry.input.get()
             rundata.primary_structure_density_multiplier[run] = primary_structure_density_multiplier_entry.input.get()
             rundata.secondary_structure_density_multiplier[run] = secondary_structure_density_multiplier_entry.input.get()
+<<<<<<< HEAD
             rundata.available_deck_length[run] = available_deck_length_entry.input.get()            
+=======
+            runddata.available_deck_length[run] = data.available_deck_length_entry.input.get()            
+>>>>>>> 4b14c27b8cb0d399dfe574854db24c2c894e62d6
             
             rundata.propeller_blades[run] = propeller_blades_entry.input.get()
             rundata.cpp_efficiency_relative_to_fpp[run] = cpp_efficiency_relative_to_fpp_entry.input.get()
