@@ -87,6 +87,8 @@ def main(fuel,rd,number_of_runs):
     design.added_resistance = np.zeros(number_of_runs)
     design.total_resistance = np.zeros(number_of_runs)
     design.speed_loss = np.zeros(number_of_runs)
+    modifiers.propulsion_efficiency = np.zeros(number_of_runs)
+    design.propulsion_coefficient = np.zeros(number_of_runs)
     design.prop_open_water_efficiency = np.zeros(number_of_runs)
     design.recovered_heat = np.zeros(number_of_runs)
     design.recovered_electricity = np.zeros(number_of_runs)
@@ -106,6 +108,7 @@ def main(fuel,rd,number_of_runs):
     import performanceanddegredation
     import propulsor
     import windassist
+    import marinesystemsandengine
     for run in range(number_of_runs):
         # initial values of variables before design iteration
         # for each run the user wishes to investigate
@@ -232,7 +235,7 @@ def main(fuel,rd,number_of_runs):
             sail_thrust, added_sail_resistance, x_position_of_sails, length_of_sails, mass, x_centroid_mass, through_life_cost, unit_purchase_cost = windassist.sail(1, rd.design_speed[run], design.wetted_surface_area[run], true_wind_speed, true_wind_direction,
                                                                                                                                                                      righting_moment_array, available_deck_length, design.beam[run], rd.depth_of_draught[run]*design.draught[run],
                                                                                                                                                                         design.draught[run], design.displaced_volume[run], rd.block_coefficient[run])
-            ChPC = 1.0
+            modifiers.propulsion_efficiency[run] = 1.0
             # IN WORK - WIND ASSIST FUNCTION AND TECHNOLOGY INTERACTIONS GO HERE
             # initial esimate of propulsion coefficient
             
@@ -246,16 +249,15 @@ def main(fuel,rd,number_of_runs):
             
             # propeller efficiency is zero
             
-            PC=((1-t)/(1-w))*rre*design.prop_open_water_efficiency[run]*(transmission_efficiency/100)*ChPC
+            design.propulsion_coefficient[run]=((1-t)/(1-w))*rre*design.prop_open_water_efficiency[run]*(transmission_efficiency/100)*modifiers.propulsion_efficiency[run]
             # initial estimate of shaft power based on rd.design_speed[run]
-            design.shaft_power[run]=design.total_resistance[run]*(rd.design_speed[run]*0.51444)/PC
+            design.shaft_power[run]=design.total_resistance[run]*(rd.design_speed[run]*0.51444)/design.propulsion_coefficient[run]
             # check shaft generator requirements
             # 0 is not fitted, + is shaft motor (power take off), - is shaft generator (power take in)
             # assuming the first operating mode is used for the design on the shaft generator
             # initial enigne selection, with the shaft motor power set to 0 and
             # using the given electrical power demand (not considering waste heat
             # recovery)
-            import marinesystemsandengine
             marinesystemsandengine.engines(0, rd.profile_main_energy_source_1[run],
                                            sea_margin, engine_margin, rd.propulsion_type[run],
                                            rd.propulsors[run], design.shaft_power[run], engine_design_rpm,
@@ -389,6 +391,7 @@ def main(fuel,rd,number_of_runs):
                 for speeds_draughts in range(len(selected_operating_profile)):
                     # find resistance at speed and draught/cargo load specified in operating_profile
                     # speed is given by selected_operating_profile[speed_draughts, 0]
+                    selected_profile.speed_dmd[speed_draughts, run] = selected_operating_profile[speed_draughts, 0]
                     # draught or cargo demand is given by selected_operating_profile[speed_draughts, 1]
                     # time in condition is given by selected_operating_profile[speed_draughts, 2]
                     if (op_switch[profile_index]==1):
@@ -421,7 +424,7 @@ def main(fuel,rd,number_of_runs):
                     modifiers.additional_resistance[run] = 0 # this can be used for change in resistance due to sails
                     # find resistance in design condition (denoted by 1), accounting for added resistance
                     selected_profile.wetted_surface_area[speed_draughts, run], selected_profile.viscous_resistance[speed_draughts, run], selected_profile.wave_resistance[speed_draughts, run], selected_profile.correlation_allowance[speed_draughts, run], selected_profile.appendage_resistance[speed_draughts, run], t, w, bar, rre = stillwaterresistance.holtrop(
-                        1, water_density, (selected_operating_profile[speed_draughts, 0] + selected_profile.speed_loss[speed_draughts, run]), selected_profile.waterline_length[speed_draughts, run], selected_profile.draught[speed_draughts, run], selected_profile.beam[speed_draughts, run], rd.prismatic_coefficient[run], LCB, selected_profile.displacement[speed_draughts, run],
+                        1, water_density, (selected_profile.speed_dmd[speed_draughts, run] + selected_profile.speed_loss[speed_draughts, run]), selected_profile.waterline_length[speed_draughts, run], selected_profile.draught[speed_draughts, run], selected_profile.beam[speed_draughts, run], rd.prismatic_coefficient[run], LCB, selected_profile.displacement[speed_draughts, run],
                         selected_profile.waterplane_coefficient[speed_draughts, run], rd.midship_coefficient[run], designhg.prop_diameter[run], rd.propulsors[run], rd.propeller_blades[run],
                         design.fouling_allowance[run], modifiers.additional_resistance[run])
                     # IN WORK - WEATHER ROUTING AND APPARENT WIND AND WAVE FUNCTION CALL HERE
@@ -434,7 +437,7 @@ def main(fuel,rd,number_of_runs):
                     selected_profile.added_resistance[speed_draughts, run], selected_profile.speed_loss[speed_draughts, run] = performanceanddegredation.addedresisance(1,
                                 selected_profile.displacement[speed_draughts, run], water_density, selected_profile.draught[speed_draughts, run],
                                 rd.block_coefficient[run], selected_profile.waterline_length[speed_draughts, run],
-                                selected_operating_profile[speed_draughts, 0], wwd.beaufort_number[speed_draughts, run],
+                                selected_profile.speed_dmd[speed_draughts, run], wwd.beaufort_number[speed_draughts, run],
                                 wwd.apparent_wave_direction[speed_draughts, run])
                     # calculate total resistance
                     selected_profile.total_resistance[speed_draughts, run]=(selected_profile.viscous_resistance[speed_draughts, run]*design.fouling_allowance[run]+selected_profile.wave_resistance[speed_draughts, run]+selected_profile.correlation_allowance[speed_draughts, run]+selected_profile.appendage_resistance[speed_draughts, run]*design.fouling_allowance[run]+modifiers.additional_resistance[run])+selected_profile.added_resistance[run]
@@ -448,8 +451,8 @@ def main(fuel,rd,number_of_runs):
                     # IN WORK NOW NEXT
                     # IN WORK - THIS GIVES INCORRECT RESULTS
                     print(designhg.prop_diameter[run])
-                    selected_profile.prop_open_water_efficiency[run], EngTorque, PropThrust, PoverD, nProp = propulsor.wagbpropandgearbox(water_density, 1, CPP, pod_correction, rd.design_speed[run], rd.design_speed[run], design.total_resistance[run], engine_design_rpm, engine_operation_rpm, propeller_design_speed, rd.propulsors[run], w, designhg.prop_diameter[run], bar, rd.propeller_blades[run])
-                    design.prop_open_water_efficiency[run] = 0.70
+                    selected_profile.prop_open_water_efficiency[speed_draughts, run], EngTorque, PropThrust, PoverD, nProp = propulsor.wagbpropandgearbox(water_density, 1, CPP, pod_correction, rd.design_speed[run], rd.design_speed[run], design.total_resistance[run], engine_design_rpm, engine_operation_rpm, propeller_design_speed, rd.propulsors[run], w, designhg.prop_diameter[run], bar, rd.propeller_blades[run])
+                    selected_profile.prop_open_water_efficiency[speed_draughts, run] = 0.70
                     # IN WORK - THIS GIVES INCORRECT RESULTS
                     # IN WORK - THIS GIVES INCORRECT RESULTS
                     # find righting moment for a heel_angle between 0 and 20 degrees
@@ -468,33 +471,34 @@ def main(fuel,rd,number_of_runs):
                     sail_thrust, added_sail_resistance, x_position_of_sails, length_of_sails, mass, x_centroid_mass, through_life_cost, unit_purchase_cost = windassist.sail(1, rd.design_speed[run], design.wetted_surface_area[run], true_wind_speed, true_wind_direction,
                                                                                                                                                                              righting_moment_array, available_deck_length, design.beam[run], rd.depth_of_draught[run]*design.draught[run],
                                                                                                                                                                                 design.draught[run], design.displaced_volume[run], rd.block_coefficient[run])
-                    ChPC = 1.0
+                    
+                    modifiers.propulsion_efficiency[run] = 1.0
                     # IN WORK - WIND ASSIST FUNCTION AND TECHNOLOGY INTERACTIONS GO HERE
                     # initial esimate of propulsion coefficient
-                    
-                    in work now
-                    
-                    design.propulsion_coefficient[run]
-                    selected_profile.propulsion_coefficient[]
-                    
-                    PC=((1-t)/(1-w))*rre*design.prop_open_water_efficiency[run]*(transmission_efficiency/100)*ChPC
+                    selected_profile.propulsion_coefficient[speed_draughts, run]=((1-t)/(1-w))*rre*selected_profile.prop_open_water_efficiency[speed_draughts, run]*(transmission_efficiency/100)*modifiers.propulsion_efficiency[run]
                     # initial estimate of shaft power based on rd.design_speed[run]
-                    design.shaft_power[run]=design.total_resistance[run]*(rd.design_speed[run]*0.51444)/PC
+                    selected_profile.shaft_power[speed_draughts, run]=selected_profile.total_resistance[run]*(selected_profile.speed_dmd[speed_draughts, run]*0.51444)/selected_profile.propulsion_coefficient[speed_draughts, run]
                     # check shaft generator requirements
                     # 0 is not fitted, + is shaft motor (power take off), - is shaft generator (power take in)
                     # assuming the first operating mode is used for the design on the shaft generator
                     # initial enigne selection, with the shaft motor power set to 0 and
                     # using the given electrical power demand (not considering waste heat
                     # recovery)
-                    import marinesystemsandengine         
-                                
-                         in work now       
-                                
-                   Up to here             
-                                
-                                
-                                
-                                
+                    UP TO HERE
+                    WHY ARE THERE NOT OUTPUT ARGUMENTS FOR MARINE SYSTEM AND ENGINE???
+                    WHAT VARIABLES SHOULD THIS BE LINKED TO DO I HAVE THEM ALREADY??
+                    
+                    marinesystemsandengine.engines(0, rd.profile_main_energy_source_1[run],
+                               sea_margin, engine_margin, rd.propulsion_type[run],
+                               rd.propulsors[run], design.shaft_power[run], engine_design_rpm,
+                               design.shaft_power[run], engine_design_rpm,
+                               light_running_factor, 0,
+                               rd.profile_auxiliary_energy_source_1[run],
+                               rd.maximum_electrical_power_available[run],
+                               rd.profile_electrical_power_demand_1[run],
+                               rd.profile_electrical_power_demand_1[run])
+                    
+                    
                                 
                                 
                                 
@@ -509,7 +513,7 @@ def main(fuel,rd,number_of_runs):
                                 UP TO HERE
                                 SPACE FOR DESIGN WIND CONDITION
                         
-                        
+                        CREATE NP.ZEROS FOR MULTIPLE DIMENSIONS
                         TWO DIMENSIONS, run and speeds, draughts for variables
                         TEST NP ARRAYS FOR MULTIPLE DIMENSIONS
                         
