@@ -38,108 +38,108 @@ def operatingprofile(design_speed, design_draught, design_cargo_capacity,
         # read in CSV files containing data and save to numpy array
         operating_profile_1=np.genfromtxt(profile_location_1, delimiter=',')
         # multiply speed by design speed
-        operating_profile_1[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_1[:,0] = (operating_profile_1[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[0]=1
         # multiply draught by design draught
-        operating_profile_1[:,1] = (operating_profile_1[:,1]+design_draught)*design_draught
+        operating_profile_1[:,1] = (operating_profile_1[:,1]*design_draught)+design_draught
     elif profile_cargo_or_draught_1 == "cargo":
         # read in CSV files containing data and save to numpy array
         operating_profile_1=np.genfromtxt(profile_location_1, delimiter=',')
         # multiply speed by design speed
-        operating_profile_1[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_1[:,0] = (operating_profile_1[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[0]=2
         # multiply cargo by design cargo
-        operating_profile_1[:,1] = (operating_profile_1[:,1]+design_cargo_capacity)*design_cargo_capacity
+        operating_profile_1[:,1] = (operating_profile_1[:,1]*design_cargo_capacity)+design_cargo_capacity
     else:
         # profile_cargo_or_draught_1 has not been populated according to user
         # or there is an ERROR
         operating_profile_1 = 0
     if profile_cargo_or_draught_2 == "draught":
         # read in CSV files containing data and save to numpy array
-        operating_profile_2=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_2=np.genfromtxt(profile_location_2, delimiter=',')
         # multiply speed by design speed
-        operating_profile_2[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_2[:,0] = (operating_profile_2[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[1]=1
         # multiply draught by design draught
-        operating_profile_2[:,1] = (operating_profile_2[:,1]+design_draught)*design_draught
+        operating_profile_2[:,1] = (operating_profile_2[:,1]*design_draught)+design_draught
     elif profile_cargo_or_draught_2 == "cargo":
         # read in CSV files containing data and save to numpy array
-        operating_profile_2=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_2=np.genfromtxt(profile_location_2, delimiter=',')
         # multiply speed by design speed
-        operating_profile_2[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_2[:,0] = (operating_profile_2[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[1]=2
         # multiply cargo by design cargo
-        operating_profile_2[:,1] = (operating_profile_2[:,1]+design_cargo_capacity)*design_cargo_capacity
+        operating_profile_2[:,1] = (operating_profile_2[:,1]*design_cargo_capacity)+design_cargo_capacity
     else:
         # profile_cargo_or_draught_2 has not been populated according to user
         # or there is an ERROR
         operating_profile_2 = 0
     if profile_cargo_or_draught_3 == "draught":
         # read in CSV files containing data and save to numpy array
-        operating_profile_3=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_3=np.genfromtxt(profile_location_3, delimiter=',')
         # multiply speed by design speed
-        operating_profile_3[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_3[:,0] = (operating_profile_3[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[2]=1
         # multiply draught by design draught
-        operating_profile_3[:,1] = (operating_profile_3[:,1]+design_draught)*design_draught
+        operating_profile_3[:,1] = (operating_profile_3[:,1]*design_draught)+design_draught
     elif profile_cargo_or_draught_3 == "cargo":
         # read in CSV files containing data and save to numpy array
-        operating_profile_3=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_3=np.genfromtxt(profile_location_3, delimiter=',')
         # multiply speed by design speed
-        operating_profile_3[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_3[:,0] = (operating_profile_3[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[2]=2
         # multiply cargo by design cargo
-        operating_profile_3[:,1] = (operating_profile_3[:,1]+design_cargo_capacity)*design_cargo_capacity
+        operating_profile_3[:,1] = (operating_profile_3[:,1]*design_cargo_capacity)+design_cargo_capacity
     else:
         # profile_cargo_or_draught_3 has not been populated according to user
         # or there is an ERROR
         operating_profile_3 = 0
     if profile_cargo_or_draught_4 == "draught":
         # read in CSV files containing data and save to numpy array
-        operating_profile_4=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_4=np.genfromtxt(profile_location_4, delimiter=',')
         # multiply speed by design speed
-        operating_profile_4[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_4[:,0] = (operating_profile_4[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[3]=1
         # multiply draught by design draught
-        operating_profile_4[:,1] = (operating_profile_4[:,1]+design_draught)*design_draught
+        operating_profile_4[:,1] = (operating_profile_4[:,1]*design_draught)+design_draught
     elif profile_cargo_or_draught_4 == "cargo":
         # read in CSV files containing data and save to numpy array
-        operating_profile_4=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_4=np.genfromtxt(profile_location_4, delimiter=',')
         # multiply speed by design speed
-        operating_profile_4[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_4[:,0] = (operating_profile_4[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[3]=2
         # multiply cargo by design cargo
-        operating_profile_4[:,1] = (operating_profile_4[:,1]+design_cargo_capacity)*design_cargo_capacity
+        operating_profile_4[:,1] = (operating_profile_4[:,1]*design_cargo_capacity)+design_cargo_capacity
     else:
         # profile_cargo_or_draught_4 has not been populated according to user
         # or there is an ERROR
         operating_profile_4 = 0
     if profile_cargo_or_draught_5 == "draught":
         # read in CSV files containing data and save to numpy array
-        operating_profile_5=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_5=np.genfromtxt(profile_location_5, delimiter=',')
         # multiply speed by design speed
-        operating_profile_5[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_5[:,0] = (operating_profile_5[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[4]=1
         # multiply draught by design draught
-        operating_profile_5[:,1] = (operating_profile_5[:,1]+design_draught)*design_draught
+        operating_profile_5[:,1] = (operating_profile_5[:,1]*design_draught)+design_draught
     elif profile_cargo_or_draught_5 == "cargo":
         # read in CSV files containing data and save to numpy array
-        operating_profile_5=np.genfromtxt(profile_location_1, delimiter=',')
+        operating_profile_5=np.genfromtxt(profile_location_5, delimiter=',')
         # multiply speed by design speed
-        operating_profile_5[:,0] = (operating_profile_1[:,0]+design_speed)*design_speed
+        operating_profile_5[:,0] = (operating_profile_5[:,0]*design_speed)+design_speed
         # set switch to show operating profile is being used
         op_switch[4]=2
         # multiply cargo by design cargo
-        operating_profile_5[:,1] = (operating_profile_5[:,1]+design_cargo_capacity)*design_cargo_capacity
+        operating_profile_5[:,1] = (operating_profile_5[:,1]*design_cargo_capacity)+design_cargo_capacity
     else:
         # profile_cargo_or_draught_5 has not been populated according to user
         # or there is an ERROR

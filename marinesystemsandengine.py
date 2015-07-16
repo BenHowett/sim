@@ -30,10 +30,10 @@ def engines(design_condition, propulsion_fuel_type, sea_margin, engine_margin,
     # light_running_factor = 0 # [%] Extra revolutions required to account for fouling of hull. This yields the light propeller curve (trials conditions).
     # propulsion_type - "fixed pitch propeller", "controllable pitch propeller", "pod (or thruster)" and "water jet"
     # no_of_shafts
-    # design_power (kW) - this is per engine (if applicable)
-    # design_rpm (rpm) - this is per engine (if applicable)
-    # operation_power (kW) - this is per engine (if applicable)
-    # operation_rpm (rpm) - this is per engine (if applicable)
+    # design_power (kW) - this is for multiple engines (if applicable)
+    # design_rpm (rpm) - this is for multiple engines (if applicable)
+    # operation_power (kW) - this is the power reqiored at the engine for multiple engines (if applicable)
+    # operation_rpm (rpm) - this is for multiple engines (if applicable)
     # light_running_factor - this does not necessarily need to be stated, as sensible default value is given - this accounts during the engine selection process for the hull/screw getting fowled
     # shaft_motor_power (kW) - design condition, will give maximum shaft power, 0 is not fitted, + is shaft motor (power take off), - is shaft generator (power take in)
     # auxiliary_fuel_type (switch) - this is an array with 0 or 1, next to each fuel, operation for multiple fuels is de, a different fuel can be demanded in different periods of operation
@@ -52,7 +52,7 @@ def engines(design_condition, propulsion_fuel_type, sea_margin, engine_margin,
     # care should be taken to ensure shaft generator and motor assumptions are
     # consistent with "main.py"
     installed_main_engine_power = design_power*((100+sea_margin)/100)*((100+engine_margin)/100) # (kW)
-    main_engine_sfc = 0 # (g/kWh)
+    main_engine_sfc = 173 # (g/kWh)
     main_engine_co2_factor = 0 # ratio between tonnes of CO2 emissions to tonnes of fuel
     main_engine_sox_factor = 0 # ratio between tonnes of CO2 emissions to tonnes of fuel
     main_engine_nox_factor = 0 # ratio between tonnes of CO2 emissions to tonnes of fuel
@@ -60,7 +60,7 @@ def engines(design_condition, propulsion_fuel_type, sea_margin, engine_margin,
     main_engine_length = 0 # (m)
     no_of_auxiliary_engines = 0
     installed_auxiliary_engine_power = 00 # (kW)
-    auxiliary_engine_sfc = 0 # (g/kWh)
+    auxiliary_engine_sfc = 190 # (g/kWh)
     auxiliary_engine_co2_factor = 0 # ratio between tonnes of CO2 emissions to tonnes of fuel
     auxiliary_engine_sox_factor = 0 # ratio between tonnes of CO2 emissions to tonnes of fuel
     auxiliary_engine_nox_factor = 0 # ratio between tonnes of CO2 emissions to tonnes of fuel

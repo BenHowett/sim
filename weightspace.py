@@ -18,7 +18,10 @@ def lightweight(Lwl, ship_type, dwt, vol_lad, B, T_des, Cb, rho):
     # calculate equivalent TEUs for container ship (assuming 14 tonnes per TEU)
     # this may underestimate capacity.
     
-    teu = (dwt/14.0)
+    teu = (dwt/7.6) # this average container weight seems to correspond with
+                    # Charlotte Rickmers Panamax Container ship, the scaling
+                    # relationship may change for different size ships
+    print(teu)
     
     Lpp = 0.97*Lwl
     

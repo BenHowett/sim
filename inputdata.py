@@ -20,7 +20,8 @@ from tkinter.ttk import *
 import numpy as np
 
 # NOTES
-
+    # read in fuel data from "fueldata" csv file
+    # set fuel source list (this is called by the user fuel selection)
 
 # POSSIBLE DIVIDE BY 0 ON OUTPUT
 # Invalid user entry
@@ -105,7 +106,7 @@ import numpy as np
     
     # accomodation length = 6 + 1.5 * engine length
     # superstructure length = (40/1000)+ accomodation length
-
+# run has to be declared in functions as input (might not be the case at the moment)!!!
         # UPTOHERE
     # PERSONNEL INCLUDING CREW NUMBER FOR WEIGHT GROUP + CONSUMPTION FIGURES
     # WEIGHT, VOLUME AND POWER DEMAND, LOCATION ESTIMATES SHOULD BE A TAB IN MODEL
@@ -118,14 +119,35 @@ run = 0
 
 # set static data for model, not modified by user interface
 
-
-
-
-# set fuel source list
+# set the fuel names to use, formatted for user interface
+fuel_names = "{None (Renewable Only)} {Marine Diesel Oil} {Heavy Fuel Oil} {Liquid Natural Gas}"
+# data corresponding to fuel names
+fuel_energy_content = [0, 44000, 44000, 44000, 44000]
+fuel_density = [0, 1.00, 1.00, 1.00, 1.00]
+# create class for fuels
 class fuel:
-    # set the fuel names to use, formatted for user interface
-    fuel_names = "{None (Renewable Only)} {Marine Diesel Oil} {Heavy Fuel Oil} {Liquid Natural Gas}"
+    pass
+    
+    # some function
+    
+    # fuel_name =
+    # co2_factor = 
+    # sox_factor =
+    # nox_factor =
+    # density =
+    # process_and_storage_mass_per_fuel_mass = 
+    
+    # FUEL COST IN SEPERATE FILE
     # bunker cost, fuel density and CO2 factor should go here
+    # NOx factor, SOx factor, 
+    # Fuel Number | Name    | Carbon Factor (te/te) | Density (te/m3) | Energy Content (MJ/te) | Empty	| Main Engine data file | Auxiliary Engine data file | Boiler data file | Bunker Capacity of each Fuel | Fuel used over design condition operating profile | Fuel used over ballast condition operating profile
+# 1 | Heavy Fuel Oil    | 3.1144                | 0.96            | 44500                  | 0
+# 2 | Marine Diesel Oil | 3.2060                | 0.96            | 44000                  | 0
+# 3 | Natural Gas       | 2.7500                | 0.47            | 53600                  | 0
+# carbon factors (tonnes CO2 per tonnes of fuel)from IMO Circ.681 and Circ.684 August 2009
+    
+    
+    
 
 # this class contains the default values for each entry, this list will be used
 # to populate an entry for each field, the same variable list is used thoughout
@@ -704,7 +726,6 @@ class actions:
         data.maximum_electrical_power_available[0] = 0
         data.maximum_heat_power_available[0] = 0
         
-<<<<<<< HEAD
         data.profile_name_1[0] = "Design Condition"
         data.profile_cargo_or_draught_1[0] = "draught"
         data.profile_location_1[0] = "operating_profiles/loaded_condition.csv"
@@ -715,18 +736,6 @@ class actions:
         data.profile_electrical_power_demand_1[0] = 0 # kW
         data.profile_heat_power_demand_1[0] = 0 # kW
         data.profile_time_1[0] = 40 # % or hours
-=======
-        data.profile_name_1[0] = ""
-        data.profile_cargo_or_draught_1[0] = ""
-        data.profile_location_1[0] = ""
-        data.profile_main_energy_source_1[0] = ""
-        data.profile_auxiliary_energy_source_1[0] = ""
-        data.profile_heat_energy_source_1[0] = ""
-        data.profile_shaft_generator_1[0] = ""
-        data.profile_electrical_power_demand_1[0] = 0
-        data.profile_heat_power_demand_1[0] = 0
-        data.profile_time_1[0] = 0
->>>>>>> 4b14c27b8cb0d399dfe574854db24c2c894e62d6
         data.profile_name_2[0] = ""
         data.profile_cargo_or_draught_2[0] = ""
         data.profile_location_2[0] = ""
@@ -987,12 +996,9 @@ class actions:
         hold_width_multiple_entry.input.set(data.hold_width_multiple[0])
         primary_structure_density_multiplier_entry.input.set(data.primary_structure_density_multiplier[0])
         secondary_structure_density_multiplier_entry.input.set(data.secondary_structure_density_multiplier[0])
-<<<<<<< HEAD
-        available_deck_length_entry.input.set(data.available_deck_length[0])
-=======
-        data.available_deck_length_entry.input.set(data.available_deck_length[0])
->>>>>>> 4b14c27b8cb0d399dfe574854db24c2c894e62d6
         
+        available_deck_length_entry.input.set(data.available_deck_length[0])
+        available_deck_length_entry.input.set(data.available_deck_length[0])
         propeller_blades_entry.input.set(data.propeller_blades[0])
         cpp_efficiency_relative_to_fpp_entry.input.set(data.cpp_efficiency_relative_to_fpp[0])
         propeller_design_rpm_entry.input.set(data.propeller_design_rpm[0])
@@ -1168,11 +1174,8 @@ class actions:
             rundata.hold_width_multiple[run] = hold_width_multiple_entry.input.get()
             rundata.primary_structure_density_multiplier[run] = primary_structure_density_multiplier_entry.input.get()
             rundata.secondary_structure_density_multiplier[run] = secondary_structure_density_multiplier_entry.input.get()
-<<<<<<< HEAD
-            rundata.available_deck_length[run] = available_deck_length_entry.input.get()            
-=======
-            runddata.available_deck_length[run] = data.available_deck_length_entry.input.get()            
->>>>>>> 4b14c27b8cb0d399dfe574854db24c2c894e62d6
+            rundata.available_deck_length[run] = available_deck_length_entry.input.get()
+            rundata.available_deck_length[run] = available_deck_length_entry.input.get()
             
             rundata.propeller_blades[run] = propeller_blades_entry.input.get()
             rundata.cpp_efficiency_relative_to_fpp[run] = cpp_efficiency_relative_to_fpp_entry.input.get()
@@ -1433,6 +1436,71 @@ class actions:
         rundata.bow_angle[run] = rundata.bow_angle[run]*np.pi/180
         rundata.pmb_angle[run] = rundata.pmb_angle[run]*np.pi/180
         rundata.stern_slope_angle[run] = rundata.stern_slope_angle[run]*np.pi/180
+        # update fuel data stored in fuel class according to user entered
+        # fuels selected for operating profile
+        if rundata.profile_main_energy_source_1[run] == "None (Renewable Only)":
+            if run == 0:
+                fuel.main_1_energy_content = [fuel_energy_content[0]]
+                fuel.main_1_density = [fuel_density[0]]
+            else:
+                fuel.main_1_energy_content.append(fuel_energy_content[0])
+                fuel.main_1_density.append(fuel_density[0])
+        if rundata.profile_main_energy_source_1[run] == "Marine Diesel Oil":
+            if run == 0:
+                fuel.main_1_energy_content = [fuel_energy_content[1]]
+                fuel.main_1_density = [fuel_density[1]]
+            else:
+                fuel.main_1_energy_content.append(fuel_energy_content[1])
+                fuel.main_1_density.append(fuel_density[1])
+        if rundata.profile_main_energy_source_1[run] == "Marine Diesel Oil":
+            if run == 0:
+                fuel.main_1_energy_content = [fuel_energy_content[2]]
+                fuel.main_1_density = [fuel_density[2]]
+            else:
+                fuel.main_1_energy_content.append(fuel_energy_content[2])
+                fuel.main_1_density.append(fuel_density[2])
+        if rundata.profile_auxiliary_energy_source_1[run] == "None (Renewable Only)":
+            if run == 0:
+                fuel.auxiliary_1_energy_content = [fuel_energy_content[0]]
+                fuel.auxiliary_1_density = [fuel_density[0]]
+            else:
+                fuel.auxiliary_1_energy_content.append(fuel_energy_content[0])
+                fuel.auxiliary_1_density.append(fuel_density[0])
+        if rundata.profile_auxiliary_energy_source_1[run] == "Marine Diesel Oil":
+            if run == 0:
+                fuel.auxiliary_1_energy_content = [fuel_energy_content[1]]
+                fuel.auxiliary_1_density = [fuel_density[1]]
+            else:
+                fuel.auxiliary_1_energy_content.append(fuel_energy_content[1])
+                fuel.auxiliary_1_density.append(fuel_density[1])
+        if rundata.profile_auxiliary_energy_source_1[run] == "Marine Diesel Oil":
+            if run == 0:
+                fuel.auxiliary_1_energy_content = [fuel_energy_content[2]]
+                fuel.auxiliary_1_density = [fuel_density[2]]
+            else:
+                fuel.auxiliary_1_energy_content.append(fuel_energy_content[2])
+                fuel.auxiliary_1_density.append(fuel_density[2])
+        if rundata.profile_heat_energy_source_1[run] == "None (Renewable Only)":
+            if run == 0:
+                fuel.heat_1_energy_content = [fuel_energy_content[0]]
+                fuel.heat_1_density = [fuel_density[0]]
+            else:
+                fuel.heat_1_energy_content.append(fuel_energy_content[0])
+                fuel.heat_1_density.append(fuel_density[0])
+        if rundata.profile_heat_energy_source_1[run] == "Marine Diesel Oil":
+            if run == 0:
+                fuel.heat_1_energy_content = [fuel_energy_content[1]]
+                fuel.heat_1_density = [fuel_density[1]]
+            else:
+                fuel.heat_1_energy_content.append(fuel_energy_content[1])
+                fuel.heat_1_density.append(fuel_density[1])
+        if rundata.profile_heat_energy_source_1[run] == "Marine Diesel Oil":
+            if run == 0:
+                fuel.heat_1_energy_content = [fuel_energy_content[2]]
+                fuel.heat_1_density = [fuel_density[2]]
+            else:
+                fuel.heat_1_energy_content.append(fuel_energy_content[2])
+                fuel.heat_1_density.append(fuel_density[2])
         # increase run number
         run += 1
         
@@ -1819,7 +1887,7 @@ profile_cargo_or_draught_1_entry = labellist(entrytab4profile1left,
                         "profile demands: ", StringVar(), "{not used} {cargo} {draught}",
                         data.profile_cargo_or_draught_1[run])
 profile_main_energy_source_1_entry = labellist(entrytab4profile1middleleft,
-                        "propulsion fuel: ", StringVar(), fuel.fuel_names,
+                        "propulsion fuel: ", StringVar(), fuel_names,
                         data.profile_main_energy_source_1[run])
 profile_shaft_generator_1_entry = labellist(entrytab4profile1middleleft,
                         "PTO/PTI mode: ", StringVar(),
@@ -1835,10 +1903,10 @@ profile_time_1_entry = labelentry(entrytab4profile1middleright,
                             "time in condition: ", DoubleVar(),
                             data.profile_time_1[run], "hrs/% ")
 profile_auxiliary_energy_source_1_entry = labellist(entrytab4profile1right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_auxiliary_energy_source_1[run])
 profile_heat_energy_source_1_entry = labellist(entrytab4profile1right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_heat_energy_source_1[run])
 profile_name_2_entry = labelentry(entrytab4profile2left, "profile name: ",
                                   StringVar(), data.profile_name_2[run], "")                        
@@ -1848,7 +1916,7 @@ profile_cargo_or_draught_2_entry = labellist(entrytab4profile2left,
                         "profile demands: ", StringVar(), "{not used} {cargo} {draught}",
                         data.profile_cargo_or_draught_2[run])
 profile_main_energy_source_2_entry = labellist(entrytab4profile2middleleft,
-                        "propulsion fuel: ", StringVar(), fuel.fuel_names,
+                        "propulsion fuel: ", StringVar(), fuel_names,
                         data.profile_main_energy_source_2[run])
 profile_shaft_generator_2_entry = labellist(entrytab4profile2middleleft,
                         "PTO/PTI mode: ", StringVar(),
@@ -1864,10 +1932,10 @@ profile_time_2_entry = labelentry(entrytab4profile2middleright,
                             "time in condition: ", DoubleVar(),
                             data.profile_time_2[run], "hrs/% ")
 profile_auxiliary_energy_source_2_entry = labellist(entrytab4profile2right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_auxiliary_energy_source_2[run])
 profile_heat_energy_source_2_entry = labellist(entrytab4profile2right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_heat_energy_source_2[run])
 profile_name_3_entry = labelentry(entrytab4profile3left, "profile name: ",
                                   StringVar(), data.profile_name_3[run], "")                        
@@ -1877,7 +1945,7 @@ profile_cargo_or_draught_3_entry = labellist(entrytab4profile3left,
                         "profile demands: ", StringVar(), "{not used} {cargo} {draught}",
                         data.profile_cargo_or_draught_3[run])
 profile_main_energy_source_3_entry = labellist(entrytab4profile3middleleft,
-                        "propulsion fuel: ", StringVar(), fuel.fuel_names,
+                        "propulsion fuel: ", StringVar(), fuel_names,
                         data.profile_main_energy_source_3[run])
 profile_shaft_generator_3_entry = labellist(entrytab4profile3middleleft,
                         "PTO/PTI mode: ", StringVar(),
@@ -1893,10 +1961,10 @@ profile_time_3_entry = labelentry(entrytab4profile3middleright,
                             "time in condition: ", DoubleVar(),
                             data.profile_time_3[run], "hrs/% ")
 profile_auxiliary_energy_source_3_entry = labellist(entrytab4profile3right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_auxiliary_energy_source_3[run])
 profile_heat_energy_source_3_entry = labellist(entrytab4profile3right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_heat_energy_source_3[run])
 profile_name_4_entry = labelentry(entrytab4profile4left, "profile name: ",
                                   StringVar(), data.profile_name_4[run], "")                        
@@ -1906,7 +1974,7 @@ profile_cargo_or_draught_4_entry = labellist(entrytab4profile4left,
                         "profile demands: ", StringVar(), "{not used} {cargo} {draught}",
                         data.profile_cargo_or_draught_4[run])
 profile_main_energy_source_4_entry = labellist(entrytab4profile4middleleft,
-                        "propulsion fuel: ", StringVar(), fuel.fuel_names,
+                        "propulsion fuel: ", StringVar(), fuel_names,
                         data.profile_main_energy_source_4[run])
 profile_shaft_generator_4_entry = labellist(entrytab4profile4middleleft,
                         "PTO/PTI mode: ", StringVar(),
@@ -1922,10 +1990,10 @@ profile_time_4_entry = labelentry(entrytab4profile4middleright,
                             "time in condition: ", DoubleVar(),
                             data.profile_time_4[run], "hrs/% ")
 profile_auxiliary_energy_source_4_entry = labellist(entrytab4profile4right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_auxiliary_energy_source_4[run])
 profile_heat_energy_source_4_entry = labellist(entrytab4profile4right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_heat_energy_source_4[run])                            
 profile_name_5_entry = labelentry(entrytab4profile5left, "profile name: ",
                                   StringVar(), data.profile_name_5[run], "")                        
@@ -1935,7 +2003,7 @@ profile_cargo_or_draught_5_entry = labellist(entrytab4profile5left,
                         "profile demands: ", StringVar(), "{not used} {cargo} {draught}",
                         data.profile_cargo_or_draught_5[run])
 profile_main_energy_source_5_entry = labellist(entrytab4profile5middleleft,
-                        "propulsion fuel: ", StringVar(), fuel.fuel_names,
+                        "propulsion fuel: ", StringVar(), fuel_names,
                         data.profile_main_energy_source_5[run])
 profile_shaft_generator_5_entry = labellist(entrytab4profile5middleleft,
                         "PTO/PTI mode: ", StringVar(),
@@ -1951,10 +2019,10 @@ profile_time_5_entry = labelentry(entrytab4profile5middleright,
                             "time in condition: ", DoubleVar(),
                             data.profile_time_5[run], "hrs/% ")
 profile_auxiliary_energy_source_5_entry = labellist(entrytab4profile5right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_auxiliary_energy_source_5[run])
 profile_heat_energy_source_5_entry = labellist(entrytab4profile5right,
-                        "fuel: ", StringVar(), fuel.fuel_names,
+                        "fuel: ", StringVar(), fuel_names,
                         data.profile_heat_energy_source_5[run])
 # create a run frame with a label in the top left
 runframe = ttk.Labelframe(root, text="Run")

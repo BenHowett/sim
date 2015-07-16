@@ -5,6 +5,14 @@
 # Version 1.0 does not fully work but links functions functions from different
 # universities
 
+# TO DO
+# NEED TO CONSIDER THAT SHIP MAY NOT REACH DESIRED SPEED
+
+
+# CHECKS
+# Stop on speed and draught in operating profile to ensure it is realistic.
+
+
 # Description:
 # The main structure of the model is contained in main.py, which is called by
 # the user interface contained in inputdata.py
@@ -17,7 +25,6 @@ import numpy as np
 # NOTE THAT SOME OF THESE ARE NOT CONNECTED TO ANYTHING YET!!!
 # BITS THAT HAVE TO BE CHANGED TO BE ADDED TO USER INTERFACE ARE NOT INCLUDED IN "IN WORK"
 # ADDED TO INTERFACE
-water_density = 1.024 # may make this into modifiable value and add to hull generation tab
 propeller_design_speed = 0 # rpm, set to 0 for 2-stroke engine, this means same speed as engine
 
 sea_margin = 15 # REPLACE POWERING MARGIN [%] Extra power on top of that required for calm water propulsion. This yields the Service Propulsion Point (SP).
@@ -54,14 +61,11 @@ def main(fuel,rd,number_of_runs):
     # class for design and technology changes
     class modifiers:
         pass
-    # class for wind and weather data
-    class wwd:
-        pass
     # class for design hull generation variables
     class designhg:
         pass
-    # class for operation variables
-    class operation:
+    # class for operation profile variables
+    class selected_profile:
         pass
     # set array length using numpy arrays for information that is saved
     designhg.prop_diameter = np.zeros(number_of_runs)
@@ -70,18 +74,31 @@ def main(fuel,rd,number_of_runs):
     # GZ = np.zeros(number_of_runs)
     design.displacement = np.zeros(number_of_runs)
     design.lightweight = np.zeros(number_of_runs)
+    design.lightweight_beam = np.zeros(number_of_runs)
+    design.lightweight_displaced_volume = np.zeros(number_of_runs)
+    design.lightweight_draught = np.zeros(number_of_runs)
+    design.waterline_bow = np.zeros(number_of_runs)
+    design.lightweight_waterline_bow = np.zeros(number_of_runs)
+    design.lightweight_waterline_stern = np.zeros(number_of_runs)
+    design.lightweight_waterplane_coefficient = np.zeros(number_of_runs)
+    design.lightweight_displaced_volume = np.zeros(number_of_runs)
     design.kg = np.zeros(number_of_runs)
     design.displaced_volume = np.zeros(number_of_runs)
     design.draught = np.zeros(number_of_runs)
     design.beam = np.zeros(number_of_runs)
     design.waterline_length = np.zeros(number_of_runs)
     design.waterplane_coefficient = np.zeros(number_of_runs)
+    design.waterline_bow = np.zeros(number_of_runs)
+    design.waterline_stern = np.zeros(number_of_runs)
     design.fouling_allowance = np.zeros(number_of_runs)
     modifiers.additional_resistance = np.zeros(number_of_runs)
+    design.wave_resistance = np.zeros(number_of_runs)
+    design.appendage_resistance = np.zeros(number_of_runs)
+    design.correlation_allowance = np.zeros(number_of_runs)
     design.wetted_surface_area = np.zeros(number_of_runs)
     design.viscous_resistance = np.zeros(number_of_runs)
-    design.beaufort_number[run] = np.zeros(number_of_runs)
-    design.apparent_wave_direction[run] = np.zeros(number_of_runs)
+    design.beaufort_number = np.zeros(number_of_runs)
+    design.apparent_wave_direction = np.zeros(number_of_runs)
     design.true_wind_speed = np.zeros(number_of_runs)
     design.true_wind_direction = np.zeros(number_of_runs)
     design.added_resistance = np.zeros(number_of_runs)
@@ -97,16 +114,31 @@ def main(fuel,rd,number_of_runs):
     design.shaft_motor_power = np.zeros(number_of_runs)
     design.shaft_power = np.zeros(number_of_runs)
     design.engine_design_rating = np.zeros(number_of_runs)
-    wwd.beaufort_number[run] = np.zeros(number_of_runs)
-    wwd.apparent_wave_direction[run] = np.zeros(number_of_runs)
-    wwd.true_wind_speed = np.zeros(number_of_runs)
-    wwd.true_wind_direction = np.zeros(number_of_runs)
+    design.installed_main_engine_power = np.zeros(number_of_runs)
+    design.main_engine_sfc = np.zeros(number_of_runs)
+    design.main_engine_co2_factor = np.zeros(number_of_runs)
+    
+    design.main_engine_mass = np.zeros(number_of_runs)
+    design.main_engine_length = np.zeros(number_of_runs)
+    design.no_of_auxiliary_engines = np.zeros(number_of_runs)
+    design.installed_auxiliary_engine_power = np.zeros(number_of_runs)
+    design.auxiliary_engine_sfc = np.zeros(number_of_runs)
+    design.auxiliary_engine_co2_factor = np.zeros(number_of_runs)
+    design.auxiliary_engine_sox_factor = np.zeros(number_of_runs)
+    design.auxiliary_engine_nox_factor = np.zeros(number_of_runs)
+    design.auxiliary_engine_mass = np.zeros(number_of_runs)
+    design.auxiliary_engine_length = np.zeros(number_of_runs)
+    design.auxiliary_engine_set_point = np.zeros(number_of_runs)
+    design.main_engine_sox_factor = np.zeros(number_of_runs)
+    design.main_engine_nox_factor = np.zeros(number_of_runs)
+    
+    
     # import required external files before loops (only needs to be done once)
     import hullgenerator
     import weightspace
     import stillwaterresistance
     import performanceanddegredation
-    import propulsor
+    # import propulsor
     import windassist
     import marinesystemsandengine
     for run in range(number_of_runs):
@@ -119,7 +151,7 @@ def main(fuel,rd,number_of_runs):
         # run hullgenerator.py with initial displacement estimate
         # note that the hull generator will also calculate the beam or draught,
         # given the design.displacement
-        designhg = hullgenerator.generatehull(run, design.displacement, water_density,
+        designhg = hullgenerator.generatehull(run, design.displacement, rd.water_density[run],
             rd.waterline_number, rd.set_beam_or_draught, rd.beam_or_draught,
             rd.block_coefficient, rd.waterline_length, rd.depth_of_draught,
             rd.midship_coefficient, rd.overall_length, rd.flare_angle,
@@ -132,10 +164,19 @@ def main(fuel,rd,number_of_runs):
             rd.aftercutup_of_waterline)
         # IN WORK - LIST VARIABLES THAT ARE OUTPUT FROM DESIGNHG HERE
         # IN WORK - LIST VARIABLES THAT ARE OUTPUT FROM DESIGNHG HERE
+        # IN WORK - CONSIDERATION OF TECHNOLOGY MODIFIERS HERE
+        modifiers
+        
+        modifiers.additional_resistance[run] = 0 # this can be used for change in resistance due to sails
+        
+        # IN WORK - CONSIDERATION OF TECHNOLOGY MODIFIERS HERE
+        
+        
+        
         for iteration in range(2):
             # carry out lightweight and kg estimation contained in
             # weightspace.py, this will give a design.displacement estimate
-            design.lightweight[run] = weightspace.lightweight(rd.waterline_length[run], rd.cargo_type[run], rd.cargo_capacity_te[run], rd.cargo_capacity_m3[run], designhg.beam[run], designhg.draught[run], rd.block_coefficient[run], water_density)
+            design.lightweight[run] = weightspace.lightweight(rd.waterline_length[run], rd.cargo_type[run], rd.cargo_capacity_te[run], rd.cargo_capacity_m3[run], designhg.beam[run], designhg.draught[run], rd.block_coefficient[run], rd.water_density[run])
             # Account for structural weight modifier
             # IN WORK NEED TO SEPARATE SUPERSTRUCTURE WEIGHT FROM HULL IN LIGHWEIGHT
             # data.primary_structure_density_multiplier
@@ -151,7 +192,7 @@ def main(fuel,rd,number_of_runs):
                                 *rd.cargo_utilisation_in_design[run])
             # re-generate hull form based on calculated design.displacement
             designhg = hullgenerator.generatehull(run, design.displacement,
-                water_density, rd.waterline_number, rd.set_beam_or_draught,
+                rd.water_density[run], rd.waterline_number, rd.set_beam_or_draught,
                 rd.beam_or_draught, rd.block_coefficient, rd.waterline_length,
                 rd.depth_of_draught, rd.midship_coefficient, rd.overall_length,
                 rd.flare_angle, rd.deadrise_angle, rd.bow_angle, rd.pmb_angle,
@@ -164,7 +205,7 @@ def main(fuel,rd,number_of_runs):
             # find design condition operational characteristics
             # the design condition is found according to the specified "displacement"
             design.beam[run], design.displaced_volume[run], design.draught[run], design.waterline_bow[run], design.waterline_stern[run], design.waterplane_coefficient[run] = hullgenerator.operationaldraughtorcargo(run, designhg, "displacement",
-                                                                                                                                                                            design.displacement[run], water_density,
+                                                                                                                                                                            design.displacement[run], rd.water_density[run],
                                                                                                                                                                             rd.waterline_number)
             # calculate waterline length and other inputs to resistance model
             design.waterline_length[run] = design.waterline_bow[run] - design.waterline_stern[run]
@@ -173,10 +214,9 @@ def main(fuel,rd,number_of_runs):
             LCB = design.waterline_length[run]/2 # LCB is assumed to be L/2
             # IN WORK
             design.fouling_allowance[run] = 1.00 # factor due to fouling
-            modifiers.additional_resistance[run] = 0 # this can be used for change in resistance due to sails
             # find resistance in design condition (denoted by 1), accounting for added resistance
             design.wetted_surface_area[run], design.viscous_resistance[run], design.wave_resistance[run], design.correlation_allowance[run], design.appendage_resistance[run], t, w, bar, rre = stillwaterresistance.holtrop(
-                1, water_density, (rd.design_speed[run] + design.speed_loss[run]), design.waterline_length[run], design.draught[run], design.beam[run], rd.prismatic_coefficient[run], LCB, design.displacement[run],
+                1, rd.water_density[run], (rd.design_speed[run] + design.speed_loss[run]), design.waterline_length[run], design.draught[run], design.beam[run], rd.prismatic_coefficient[run], LCB, design.displacement[run],
                 design.waterplane_coefficient[run], rd.midship_coefficient[run], designhg.prop_diameter[run], rd.propulsors[run], rd.propeller_blades[run],
                 design.fouling_allowance[run], modifiers.additional_resistance[run])
             # IN WORK - WEATHER ROUTING AND APPARENT WIND AND WAVE FUNCTION CALL HERE
@@ -188,7 +228,7 @@ def main(fuel,rd,number_of_runs):
             # IN WORK - WEATHER ROUTING AND APPARENT WIND AND WAVE FUNCTION CALL HERE
             # find added resistance in design condition
             design.added_resistance[run], design.speed_loss[run] = performanceanddegredation.addedresisance(1,
-                        design.displacement[run], water_density, design.draught[run],
+                        design.displacement[run], rd.water_density[run], design.draught[run],
                         rd.block_coefficient[run], design.waterline_length[run],
                         rd.design_speed[run], design.beaufort_number[run],
                         design.apparent_wave_direction[run])
@@ -212,10 +252,13 @@ def main(fuel,rd,number_of_runs):
             # IN WORK
             # assumption for design condition
             engine_operation_rpm = engine_design_rpm
+            
+            # where to find and set gear ratio??
+            
             # IN WORK
             # IN WORK - THIS GIVES INCORRECT RESULTS
             print(designhg.prop_diameter[run])
-            design.prop_open_water_efficiency[run], EngTorque, PropThrust, PoverD, nProp = propulsor.wagbpropandgearbox(water_density, 1, CPP, pod_correction, rd.design_speed[run], rd.design_speed[run], design.total_resistance[run], engine_design_rpm, engine_operation_rpm, propeller_design_speed, rd.propulsors[run], w, designhg.prop_diameter[run], bar, rd.propeller_blades[run])
+            # design.prop_open_water_efficiency[run], EngTorque, PropThrust, PoverD, nProp = propulsor.wagbpropandgearbox(rd.water_density[run], 1, CPP, pod_correction, rd.design_speed[run], rd.design_speed[run], design.total_resistance[run], engine_design_rpm, engine_operation_rpm, propeller_design_speed, rd.propulsors[run], w, designhg.prop_diameter[run], bar, rd.propeller_blades[run])
             design.prop_open_water_efficiency[run] = 0.70
             # IN WORK - THIS GIVES INCORRECT RESULTS
             # IN WORK - THIS GIVES INCORRECT RESULTS
@@ -232,7 +275,7 @@ def main(fuel,rd,number_of_runs):
 #                    print('GZ at 2 degrees is: ' + repr(GZ) + 'm')
             # IN WORK - THIS GIVES INCORRECT RESULTS
             # IN WORK - WIND ASSIST FUNCTION AND TECHNOLOGY INTERACTIONS GO HERE
-            sail_thrust, added_sail_resistance, x_position_of_sails, length_of_sails, mass, x_centroid_mass, through_life_cost, unit_purchase_cost = windassist.sail(1, rd.design_speed[run], design.wetted_surface_area[run], true_wind_speed, true_wind_direction,
+            sail_thrust, added_sail_resistance, x_position_of_sails, length_of_sails, mass, x_centroid_mass, through_life_cost, unit_purchase_cost = windassist.sail(1, rd.design_speed[run], design.wetted_surface_area[run], design.true_wind_speed[run], design.true_wind_direction[run],
                                                                                                                                                                      righting_moment_array, available_deck_length, design.beam[run], rd.depth_of_draught[run]*design.draught[run],
                                                                                                                                                                         design.draught[run], design.displaced_volume[run], rd.block_coefficient[run])
             modifiers.propulsion_efficiency[run] = 1.0
@@ -258,7 +301,7 @@ def main(fuel,rd,number_of_runs):
             # initial enigne selection, with the shaft motor power set to 0 and
             # using the given electrical power demand (not considering waste heat
             # recovery)
-            marinesystemsandengine.engines(0, rd.profile_main_energy_source_1[run],
+            design.installed_main_engine_power[run], design.main_engine_sfc[run], design.main_engine_co2_factor[run], design.main_engine_sox_factor[run], design.main_engine_nox_factor[run], design.main_engine_mass[run], design.main_engine_length[run], design.no_of_auxiliary_engines[run], design.installed_auxiliary_engine_power[run], design.auxiliary_engine_sfc[run], design.auxiliary_engine_co2_factor[run], design.auxiliary_engine_sox_factor[run], design.auxiliary_engine_nox_factor[run], design.auxiliary_engine_mass[run], design.auxiliary_engine_length[run], design.auxiliary_engine_set_point[run] = marinesystemsandengine.engines(1, rd.profile_main_energy_source_1[run],
                                            sea_margin, engine_margin, rd.propulsion_type[run],
                                            rd.propulsors[run], design.shaft_power[run], engine_design_rpm,
                                            design.shaft_power[run], engine_design_rpm,
@@ -344,7 +387,7 @@ def main(fuel,rd,number_of_runs):
             # same fuel demands that are in the first populated operating profile
             # are asssumed
             # select a new engine given the energy requirements:
-            marinesystemsandengine.engines(0, rd.profile_main_energy_source_1[run],
+            design.installed_main_engine_power[run], design.main_engine_sfc[run], design.main_engine_co2_factor[run], design.main_engine_sox_factor[run], design.main_engine_nox_factor[run], design.main_engine_mass[run], design.main_engine_length[run], design.no_of_auxiliary_engines[run], design.installed_auxiliary_engine_power[run], design.auxiliary_engine_sfc[run], design.auxiliary_engine_co2_factor[run], design.auxiliary_engine_sox_factor[run], design.auxiliary_engine_nox_factor[run], design.auxiliary_engine_mass[run], design.auxiliary_engine_length[run], design.auxiliary_engine_set_point[run] = marinesystemsandengine.engines(1, rd.profile_main_energy_source_1[run],
                                            sea_margin, engine_margin, rd.propulsion_type[run],
                                            rd.propulsors[run], design.shaft_power[run], engine_design_rpm,
                                            design.shaft_power[run], engine_design_rpm,
@@ -353,6 +396,11 @@ def main(fuel,rd,number_of_runs):
                                            rd.maximum_electrical_power_available[run],
                                            design.auxiliary_energy[run],
                                            design.auxiliary_energy[run])
+        # find the lighweight draught to ensure that a draught in the operating
+        # profile that is smaller than this cannot be demanded
+        design.lightweight_displaced_volume[run] = design.lightweight[run]/rd.water_density[run]
+        design.lightweight_beam[run], design.lightweight_displaced_volume[run], design.lightweight_draught[run], design.lightweight_waterline_bow[run], design.lightweight_waterline_stern[run], design.lightweight_waterplane_coefficient[run] = hullgenerator.operationaldraughtorcargo(run, designhg, "displacement",
+                                                                                                                                                                                                                                                                design.lightweight_displaced_volume[run], rd.water_density[run], rd.waterline_number)                            
         # calculate operational performance for each operating condition
         # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         # read in operational profiles defined in user interface and folder
@@ -376,82 +424,200 @@ def main(fuel,rd,number_of_runs):
                 # operating profile has been populated
                 if (profile_index==0):
                     selected_operating_profile = operating_profile_1
+                    # assign energy demands given by operating profile to selected operating profile
+                    selected_profile_main_energy_source = rd.profile_main_energy_source_1[run]
+                    selected_profile_auxiliary_energy_source = rd.profile_auxiliary_energy_source_1[run]
+                    selected_profile_heat_energy_source = rd.profile_heat_energy_source_1[run]
+                    selected_profile_shaft_generator = rd.profile_shaft_generator_1[run]
+                    selected_profile_electrical_power_demand = rd.profile_electrical_power_demand_1[run]
+                    selected_profile_heat_power_demand = rd.profile_heat_power_demand_1[run]
+                    selected_profile_fuel_heat_energy_content = fuel.heat_1_energy_content[run]
                 elif (profile_index==1):
                     selected_operating_profile = operating_profile_2
+                    # assign energy demands given by operating profile to selected operating profile
+                    selected_profile_main_energy_source = rd.profile_main_energy_source_2[run]
+                    selected_profile_auxiliary_energy_source = rd.profile_auxiliary_energy_source_2[run]
+                    selected_profile_heat_energy_source = rd.profile_heat_energy_source_2[run]
+                    selected_profile_shaft_generator = rd.profile_shaft_generator_2[run]
+                    selected_profile_electrical_power_demand = rd.profile_electrical_power_demand_2[run]
+                    selected_profile_heat_power_demand = rd.profile_heat_power_demand_2[run]
+                    selected_profile_fuel_heat_energy_content = fuel.heat_2_energy_content[run]
                 elif (profile_index==2):
                     selected_operating_profile = operating_profile_3
+                    # assign energy demands given by operating profile to selected operating profile
+                    selected_profile_main_energy_source = rd.profile_main_energy_source_3[run]
+                    selected_profile_auxiliary_energy_source = rd.profile_auxiliary_energy_source_3[run]
+                    selected_profile_heat_energy_source = rd.profile_heat_energy_source_3[run]
+                    selected_profile_shaft_generator = rd.profile_shaft_generator_3[run]
+                    selected_profile_electrical_power_demand = rd.profile_electrical_power_demand_3[run]
+                    selected_profile_heat_power_demand = rd.profile_heat_power_demand_3[run]
+                    selected_profile_time = rd.profile_time_3[run]
+                    selected_profile_fuel_heat_energy_content = fuel.heat_3_energy_content[run]
                 elif (profile_index==3):
                     selected_operating_profile = operating_profile_4
+                    # assign energy demands given by operating profile to selected operating profile
+                    selected_profile_main_energy_source = rd.profile_main_energy_source_4[run]
+                    selected_profile_auxiliary_energy_source = rd.profile_auxiliary_energy_source_4[run]
+                    selected_profile_heat_energy_source = rd.profile_heat_energy_source_4[run]
+                    selected_profile_shaft_generator = rd.profile_shaft_generator_4[run]
+                    selected_profile_electrical_power_demand = rd.profile_electrical_power_demand_4[run]
+                    selected_profile_heat_power_demand = rd.profile_heat_power_demand_4[run]
+                    selected_profile_fuel_heat_energy_content = fuel.heat_4_energy_content[run]
                 elif (profile_index==4):
                     selected_operating_profile = operating_profile_5
+                    # assign energy demands given by operating profile to selected operating profile
+                    selected_profile_main_energy_source = rd.profile_main_energy_source_5[run]
+                    selected_profile_auxiliary_energy_source = rd.profile_auxiliary_energy_source_5[run]
+                    selected_profile_heat_energy_source = rd.profile_heat_energy_source_5[run]
+                    selected_profile_shaft_generator = rd.profile_shaft_generator_5[run]
+                    selected_profile_electrical_power_demand = rd.profile_electrical_power_demand_5[run]
+                    selected_profile_heat_power_demand = rd.profile_heat_power_demand_5[run]
+                    selected_profile_fuel_heat_energy_content = fuel.heat_5_energy_content[run]
                 else:
                     # an unlikely ERROR here somewhere
                     pass
+                # set size of operational performance matrix, based on operating profile
+                # asssumes operating profile is the same for all runs
+                if (run==0):
+                    selected_profile.added_resistance = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.appendage_resistance = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.beam = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.cargo_load = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.correlation_allowance = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.displaced_volume = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.draught_dmd = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.displacement = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.draught = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.prop_open_water_efficiency = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.propulsion_coefficient = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.shaft_power = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.speed = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.speed_dmd = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.speed_loss = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.total_resistance = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.viscous_resistance = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.waterline_bow = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.waterline_length = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.waterline_stern = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.waterplane_coefficient = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.wave_resistance = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.wetted_surface_area = np.zeros((len(selected_operating_profile), number_of_runs))
+                    
+                    
+                    
+                    
+                    selected_profile.beaufort_number = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.apparent_wave_direction = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.true_wind_speed = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.true_wind_direction = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.main_engine_sfc = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.main_engine_co2_factor = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.main_engine_sox_factor = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.main_engine_nox_factor = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.auxiliary_engine_sfc = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.auxiliary_engine_co2_factor = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.auxiliary_engine_sox_factor = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.auxiliary_engine_nox_factor = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.auxiliary_engine_mass = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.auxiliary_engine_length = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.heat_energy = np.zeros((len(selected_operating_profile), number_of_runs))
+                    
+                    
+                    selected_profile.boiler_fuel_energy_requirement = np.zeros((len(selected_operating_profile), number_of_runs))
+                    
+                    selected_profile.auxiliary_energy = np.zeros((len(selected_operating_profile), number_of_runs))
+                    
+                    
+                    
+                    selected_profile.main_engine_fuel_tpd = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.aux_engine_fuel_tpd = np.zeros((len(selected_operating_profile), number_of_runs))
+                    selected_profile.heat_fuel_tpd = np.zeros((len(selected_operating_profile), number_of_runs))
+                    
+                    selected_profile.shaft_power = np.zeros((len(selected_operating_profile), number_of_runs))
+                    
+                    selected_profile.avg_speed = np.zeros(number_of_runs)
+                    selected_profile.avg_main_engine_fuel_tpd = np.zeros(number_of_runs)
+                    selected_profile.avg_aux_engine_fuel_tpd = np.zeros(number_of_runs)
+                    selected_profile.avg_heat_fuel_tpd = np.zeros(number_of_runs)
+                    
+                    
+                    
+                    
+                else:
+                    pass
                 # examine each draught and speed combination in selected_operating_profile
-                for speeds_draughts in range(len(selected_operating_profile)):
+                for speed_draughts in range(len(selected_operating_profile)):
                     # find resistance at speed and draught/cargo load specified in operating_profile
                     # speed is given by selected_operating_profile[speed_draughts, 0]
                     selected_profile.speed_dmd[speed_draughts, run] = selected_operating_profile[speed_draughts, 0]
                     # draught or cargo demand is given by selected_operating_profile[speed_draughts, 1]
                     # time in condition is given by selected_operating_profile[speed_draughts, 2]
+                    # IN WORK - NEED TO MOVE TO APPROPRIATE PLACE, CARRY OUT SAME PROCEDURE FOR DEADWEIGHT DEMAND AND CHANGE TO USE selected_profile.cargo_load KEEP _dmd AS WHAT WAS READ FROM OPERATING PROFILE
+                    
+                    # ensure that the demanded draught is not below the
+                    # lightweight_draught, if not use the lightweight_draught
+                    if (selected_operating_profile[speed_draughts, 1] <= design.lightweight_draught[run]):
+                        selected_profile.draught_dmd[speed_draughts,run] = design.lightweight_draught[run]
+                        # WARNING TO USER IF THIS IS USED
+                    else:
+                        selected_profile.draught_dmd[speed_draughts, run] = selected_operating_profile[speed_draughts, 1]
+                        
+                    # IN WORK - NEED TO MOVE TO APPROPRIATE PLACE, CARRY OUT SAME PROCEDURE FOR DEADWEIGHT DEMAND AND CHANGE TO USE selected_profile.cargo_load KEEP _dmd AS WHAT WAS READ FROM OPERATING PROFILE
                     if (op_switch[profile_index]==1):
                         # find ship characteristics of ship given by designhg from "draught" demand
                         selected_profile.beam[speed_draughts, run], selected_profile.displaced_volume[speed_draughts, run], selected_profile.draught[speed_draughts, run], selected_profile.waterline_bow[speed_draughts, run], selected_profile.waterline_stern[speed_draughts, run], selected_profile.waterplane_coefficient[speed_draughts, run] = hullgenerator.operationaldraughtorcargo(run, designhg, "draught",
-                                                                                                                                                                                                                                                                selected_operating_profile[speed_draughts, 1], water_density, rd.waterline_number)
+                                                                                                                                                                                                                                                                selected_profile.draught_dmd[speed_draughts,run], rd.water_density[run], rd.waterline_number)
                         # find displacement
-                        selected_profile.displacement[speed_draughts, run] = (selected_profile.displaced_volume[speed_draughts, run]*water_density)
+                        selected_profile.displacement[speed_draughts, run] = (selected_profile.displaced_volume[speed_draughts, run]*rd.water_density[run])
                         # find resulting cargo load from draught demand
                         selected_profile.cargo_load[speed_draughts, run] = (selected_profile.displacement[speed_draughts, run]
                                                         - design.lightweight[run])
                     elif (op_switch[profile_index]==2):
                         # use cargo load demand given in operating profile
-                        selected_profile.cargo_load[speed_draughts, run] = selected_operating_profile[speed_draughts, 1]
+                        selected_profile.cargo_load[speed_draughts, run] = selected_profile.draught_dmd[speed_draughts,run]
                         # find resulting displacement demand from cargo demand
                         selected_profile.displacement[speed_draughts, run] = (selected_profile.cargo_load[speed_draughts, run]
                                                         + design.lightweight[run])
                         # find volume
-                        selected_profile.displaced_volume[speed_draughts, run] = selected_profile.displacement[speed_draughts, run]/water_density
+                        selected_profile.displaced_volume[speed_draughts, run] = selected_profile.displacement[speed_draughts, run]/rd.water_density[run]
                         # find ship characteristics of ship given by designhg from "displacement" demand                        
                         selected_profile.beam[speed_draughts, run], selected_profile.displaced_volume[speed_draughts, run], selected_profile.draught[speed_draughts, run], selected_profile.waterline_bow[speed_draughts, run], selected_profile.waterline_stern[speed_draughts, run], selected_profile.waterplane_coefficient[speed_draughts, run] = hullgenerator.operationaldraughtorcargo(run, designhg, "displacement",
-                                                                                                                                                                                                                                                                selected_profile.displaced_volume[speed_draughts, run], water_density, rd.waterline_number)
+                                                                                                                                                                                                                                                                selected_profile.displaced_volume[speed_draughts, run], rd.water_density[run], rd.waterline_number)
                     # calculate waterline length and other inputs to resistance model
-                    selected_profile.waterline_length[speed_draughts, run] = selected_profile.waterline_bow[speeds_draughts, run] - selected_profile.waterline_stern[speeds_draughts, run]
+                    selected_profile.waterline_length[speed_draughts, run] = selected_profile.waterline_bow[speed_draughts, run] - selected_profile.waterline_stern[speed_draughts, run]
                     # IN WORK
                     # prismatic coefficient is design value can be better estimated
-                    LCB = design.waterline_length[run]/2 # LCB is assumed to be L/2
+                    LCB = selected_profile.waterline_length[speed_draughts, run]/2 # LCB is assumed to be L/2
                     # IN WORK
                     design.fouling_allowance[run] = 1.00 # factor due to fouling
-                    modifiers.additional_resistance[run] = 0 # this can be used for change in resistance due to sails
                     # find resistance in design condition (denoted by 1), accounting for added resistance
                     selected_profile.wetted_surface_area[speed_draughts, run], selected_profile.viscous_resistance[speed_draughts, run], selected_profile.wave_resistance[speed_draughts, run], selected_profile.correlation_allowance[speed_draughts, run], selected_profile.appendage_resistance[speed_draughts, run], t, w, bar, rre = stillwaterresistance.holtrop(
-                        1, water_density, (selected_profile.speed_dmd[speed_draughts, run] + selected_profile.speed_loss[speed_draughts, run]), selected_profile.waterline_length[speed_draughts, run], selected_profile.draught[speed_draughts, run], selected_profile.beam[speed_draughts, run], rd.prismatic_coefficient[run], LCB, selected_profile.displacement[speed_draughts, run],
+                        1, rd.water_density[run], (selected_profile.speed_dmd[speed_draughts, run] + selected_profile.speed_loss[speed_draughts, run]), selected_profile.waterline_length[speed_draughts, run], selected_profile.draught[speed_draughts, run], selected_profile.beam[speed_draughts, run], rd.prismatic_coefficient[run], LCB, selected_profile.displacement[speed_draughts, run],
                         selected_profile.waterplane_coefficient[speed_draughts, run], rd.midship_coefficient[run], designhg.prop_diameter[run], rd.propulsors[run], rd.propeller_blades[run],
                         design.fouling_allowance[run], modifiers.additional_resistance[run])
                     # IN WORK - WEATHER ROUTING AND APPARENT WIND AND WAVE FUNCTION CALL HERE
-                    wwd.beaufort_number[speed_draughts, run] = 0
-                    wwd.apparent_wave_direction[speed_draughts, run] = 0
-                    wwd.true_wind_speed[speed_draughts, run] = 0 # ABSOLUTE WIND AND WAVE DIRECTON
-                    wwd.true_wind_direction[speed_draughts, run] = 0 # ABSOLUTE WIND AND WAVE DIRECTON
+                    selected_profile.beaufort_number[speed_draughts, run] = 0
+                    selected_profile.apparent_wave_direction[speed_draughts, run] = 0
+                    selected_profile.true_wind_speed[speed_draughts, run] = 0 # ABSOLUTE WIND AND WAVE DIRECTON
+                    selected_profile.true_wind_direction[speed_draughts, run] = 0 # ABSOLUTE WIND AND WAVE DIRECTON
                     # IN WORK - WEATHER ROUTING AND APPARENT WIND AND WAVE FUNCTION CALL HERE
                     # find added resistance in design condition
                     selected_profile.added_resistance[speed_draughts, run], selected_profile.speed_loss[speed_draughts, run] = performanceanddegredation.addedresisance(1,
-                                selected_profile.displacement[speed_draughts, run], water_density, selected_profile.draught[speed_draughts, run],
+                                selected_profile.displacement[speed_draughts, run], rd.water_density[run], selected_profile.draught[speed_draughts, run],
                                 rd.block_coefficient[run], selected_profile.waterline_length[speed_draughts, run],
-                                selected_profile.speed_dmd[speed_draughts, run], wwd.beaufort_number[speed_draughts, run],
-                                wwd.apparent_wave_direction[speed_draughts, run])
+                                selected_profile.speed_dmd[speed_draughts, run], selected_profile.beaufort_number[speed_draughts, run],
+                                selected_profile.apparent_wave_direction[speed_draughts, run])
                     # calculate total resistance
                     selected_profile.total_resistance[speed_draughts, run]=(selected_profile.viscous_resistance[speed_draughts, run]*design.fouling_allowance[run]+selected_profile.wave_resistance[speed_draughts, run]+selected_profile.correlation_allowance[speed_draughts, run]+selected_profile.appendage_resistance[speed_draughts, run]*design.fouling_allowance[run]+modifiers.additional_resistance[run])+selected_profile.added_resistance[run]
                     # IN WORK NOW NEXT
                     #
-                    # look up saved engine data for enine operation rpm!
-                    # MAY NOT NEED ANOTHER ENGINE CALL?
+                    # CALL ENGINE IN OPERATION MODE
                     
                     # for now make this assumption
                     engine_operation_rpm = engine_design_rpm
                     # IN WORK NOW NEXT
                     # IN WORK - THIS GIVES INCORRECT RESULTS
-                    print(designhg.prop_diameter[run])
-                    selected_profile.prop_open_water_efficiency[speed_draughts, run], EngTorque, PropThrust, PoverD, nProp = propulsor.wagbpropandgearbox(water_density, 1, CPP, pod_correction, rd.design_speed[run], rd.design_speed[run], design.total_resistance[run], engine_design_rpm, engine_operation_rpm, propeller_design_speed, rd.propulsors[run], w, designhg.prop_diameter[run], bar, rd.propeller_blades[run])
+                    #selected_profile.prop_open_water_efficiency[speed_draughts, run], EngTorque, PropThrust, PoverD, nProp = propulsor.wagbpropandgearbox(rd.water_density[run], 1, CPP, pod_correction, rd.design_speed[run], rd.design_speed[run], design.total_resistance[run], engine_design_rpm, engine_operation_rpm, propeller_design_speed, rd.propulsors[run], w, designhg.prop_diameter[run], bar, rd.propeller_blades[run])
                     selected_profile.prop_open_water_efficiency[speed_draughts, run] = 0.70
                     # IN WORK - THIS GIVES INCORRECT RESULTS
                     # IN WORK - THIS GIVES INCORRECT RESULTS
@@ -468,7 +634,7 @@ def main(fuel,rd,number_of_runs):
         #                    print('GZ at 2 degrees is: ' + repr(GZ) + 'm')
                     # IN WORK - THIS GIVES INCORRECT RESULTS
                     # IN WORK - WIND ASSIST FUNCTION AND TECHNOLOGY INTERACTIONS GO HERE
-                    sail_thrust, added_sail_resistance, x_position_of_sails, length_of_sails, mass, x_centroid_mass, through_life_cost, unit_purchase_cost = windassist.sail(1, rd.design_speed[run], design.wetted_surface_area[run], true_wind_speed, true_wind_direction,
+                    sail_thrust, added_sail_resistance, x_position_of_sails, length_of_sails, mass, x_centroid_mass, through_life_cost, unit_purchase_cost = windassist.sail(1, rd.design_speed[run], selected_profile.wetted_surface_area[speed_draughts, run], selected_profile.true_wind_speed[speed_draughts, run], selected_profile.true_wind_direction[speed_draughts, run],
                                                                                                                                                                              righting_moment_array, available_deck_length, design.beam[run], rd.depth_of_draught[run]*design.draught[run],
                                                                                                                                                                                 design.draught[run], design.displaced_volume[run], rd.block_coefficient[run])
                     
@@ -478,480 +644,696 @@ def main(fuel,rd,number_of_runs):
                     selected_profile.propulsion_coefficient[speed_draughts, run]=((1-t)/(1-w))*rre*selected_profile.prop_open_water_efficiency[speed_draughts, run]*(transmission_efficiency/100)*modifiers.propulsion_efficiency[run]
                     # initial estimate of shaft power based on rd.design_speed[run]
                     selected_profile.shaft_power[speed_draughts, run]=selected_profile.total_resistance[run]*(selected_profile.speed_dmd[speed_draughts, run]*0.51444)/selected_profile.propulsion_coefficient[speed_draughts, run]
+                    
+                    # check to see if power exceeded IN WORK
+                    if selected_profile.shaft_power[speed_draughts, run] > design.installed_main_engine_power[run]:
+                        selected_profile.speed[speed_draughts, run] = selected_profile.shaft_power[speed_draughts, run]/(selected_profile.total_resistance[run]*0.51444/selected_profile.propulsion_coefficient[speed_draughts, run])
+                        
+                        
+                    else:
+                        selected_profile.speed[speed_draughts, run] = selected_profile.speed_dmd[speed_draughts, run]
+                    # check to see if power exceeded IN WORK
+                    
                     # check shaft generator requirements
                     # 0 is not fitted, + is shaft motor (power take off), - is shaft generator (power take in)
                     # assuming the first operating mode is used for the design on the shaft generator
                     # initial enigne selection, with the shaft motor power set to 0 and
                     # using the given electrical power demand (not considering waste heat
                     # recovery)
-                    UP TO HERE
-                    WHY ARE THERE NOT OUTPUT ARGUMENTS FOR MARINE SYSTEM AND ENGINE???
-                    WHAT VARIABLES SHOULD THIS BE LINKED TO DO I HAVE THEM ALREADY??
                     
-                    marinesystemsandengine.engines(0, rd.profile_main_energy_source_1[run],
-                               sea_margin, engine_margin, rd.propulsion_type[run],
-                               rd.propulsors[run], design.shaft_power[run], engine_design_rpm,
-                               design.shaft_power[run], engine_design_rpm,
-                               light_running_factor, 0,
-                               rd.profile_auxiliary_energy_source_1[run],
-                               rd.maximum_electrical_power_available[run],
-                               rd.profile_electrical_power_demand_1[run],
-                               rd.profile_electrical_power_demand_1[run])
+                    # IN WORK change installed main engine power, here and above to consider operating profile that is being considered
                     
                     
-                                
-                                
-                                
-                                
-                                
-                                
-                                
-                                
-                                
-                                
-                                
-                                UP TO HERE
-                                SPACE FOR DESIGN WIND CONDITION
-                        
-                        CREATE NP.ZEROS FOR MULTIPLE DIMENSIONS
-                        TWO DIMENSIONS, run and speeds, draughts for variables
-                        TEST NP ARRAYS FOR MULTIPLE DIMENSIONS
-                        
-                        
-                        
-                        
-                        np.zeros((speeddraughts, run))
-[speed draugts, run]
-                        SAVE AS ABOVE WHEN SAVING BACK TO EACH PROFILE.
-                        
-                        
-                        
-                  
-                  PRE-SET VARIABLE LENGTHS SIMILAR TO DESIGN CONDITION      
-                        
-                        
-                        CARRY ON ITERATION RUN RESISTANCE MODEL PROPELLER MODEL ETC. AS IN DESIGN
-                        
-                        add selected_profile pass
-                        
-                        hgop.draught
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                                                            
-                    
-                        
-                        
-                        
-                        
-                        
+                    design.installed_main_engine_power[run], selected_profile.main_engine_sfc[speed_draughts, run], selected_profile.main_engine_co2_factor[speed_draughts, run], selected_profile.main_engine_sox_factor[speed_draughts, run], selected_profile.main_engine_nox_factor[speed_draughts, run], design.main_engine_mass[run], design.main_engine_length[run], design.no_of_auxiliary_engines[run], design.installed_auxiliary_engine_power[run], selected_profile.auxiliary_engine_sfc[speed_draughts, run], selected_profile.auxiliary_engine_co2_factor[speed_draughts, run], selected_profile.auxiliary_engine_sox_factor[speed_draughts, run], selected_profile.auxiliary_engine_nox_factor[speed_draughts, run], selected_profile.auxiliary_engine_mass[speed_draughts, run], selected_profile.auxiliary_engine_length[speed_draughts, run], design.auxiliary_engine_set_point[run] = marinesystemsandengine.engines(1, rd.profile_main_energy_source_1[run],
+                                                   sea_margin, engine_margin, rd.propulsion_type[run],
+                                                   rd.propulsors[run], design.shaft_power[run], engine_design_rpm,
+                                                   selected_profile.shaft_power[speed_draughts, run], engine_design_rpm,
+                                                   light_running_factor, 0,
+                                                   rd.profile_auxiliary_energy_source_1[run],
+                                                   rd.maximum_electrical_power_available[run],
+                                                   design.auxiliary_energy[run],
+                                                   selected_profile_electrical_power_demand)
+                    # size waste heat recovery plant based on user requirement, before
+                    # considering shaft generator
+                    if whr_plant_energy_type_output == "Electrical and Heat":
+                        # IN WORK - CALL WASTE HEATER RECOVERY PLANT FOR GENERATION OF HEAT AND ELECTRICITY
+                        design.recovered_heat[run] = 0
+                        design.recovered_electricity[run] = 0
+                        # IN WORK - CALL WASTE HEATER RECOVERY PLANT FOR GENERATION OF HEAT AND ELECTRICITY
+                    elif whr_plant_energy_type_output == "Heat":
+                        # IN WORK - CALL WASTE HEATER RECOVERY PLANT FOR GENERATION OF HEAT
+                        design.recovered_heat[run] = 0
+                        design.recovered_electricity[run] = 0
+                        # IN WORK - CALL WASTE HEATER RECOVERY PLANT FOR GENERATION OF HEAT
+                    else:
+                        # whr_plant_energy_type_output == "None", the field is unpopulated,
+                        # include_whr_in_design_phase == 1 or there is an ERROR
+                        # IN WORK
+                        # No WHR plant fitted set recovered heat and electricity to 0
+                        design.recovered_heat[run] = 0
+                        design.recovered_electricity[run] = 0
+                        # IN WORK
+                    # required heat and auxiliary power accounting for waste heat recovered
+                    # as specified in the user interface
+                    # Note that putting heat back on to the shaft is managed through the
+                    # PTO/PTI
+                    # the same fuel demands that are in the first populated operating
+                    # profile are asssumed
+                    # find energy demands accounting for recovered energy
+                    selected_profile.auxiliary_energy[speed_draughts, run] = rd.profile_electrical_power_demand_1[run]-design.recovered_electricity[run]
+                    selected_profile.heat_energy[speed_draughts, run] = selected_profile_heat_power_demand-design.recovered_heat[run]
 
-                    
-                    
-                    
-                    
-                    
-                    # save operational condition
-                    if (profile_index==0):
-                        # copy the selected_profile class to create a new class
-                        class profile_1(selected_profile):
-                            pass
-                    elif (profile_index==1):
-                        # copy the selected_profile class to create a new class
-                        class profile_1(selected_profile):
-                            pass
-                        
-                        .
-                        
-                    profile_1.
-
-
-
-
-profile_1.beam[speeds_draught]
-profile_1.cargo_load[speeds_draught]
-profile_1.displaced_volume[speeds_draught]
-profile_1.displacement[speeds_draught]
-profile_1.draught[speeds_draught]
-profile_1.waterline_bow[speeds_draught]
-profile_1.waterline_length[speeds_draught]
-profile_1.waterline_stern[speeds_draught]
-profile_1.waterplane_coefficient[speeds_draught]
-
-# NEED ENOUGH VARIABLES TO ANALYSE WHERE ENERGY IS USED.
-
-# COMMON FUEL LIST
-
-
-design.lightweight
-design.total_cost
-design.technology_cost
-profile_avg_an.cargo_load
-profile_avg_an.displaced_volume
-profile_avg_an.displacement
-profile_avg_an.draught
-profile_avg_an.fuel_consumption
-profile_avg_an.speed
-profile_avg_an.annual_cost
-profile_avg_an.annual_technology_cost
-profile_avg_an.co2_emissions
-profile_avg_an.nox_emissions
-profile_avg_an.sox_emissions
-
-
-
-            UP TO HERE
-                                        else:
+                    # set design of shaft generator (no differences have been assumed for
+                    # single or twin shaft generators)
+                    if rd.shaft_generator_fitted[run] == 0:
+                        # shaft generator is not installed
+                        design.shaft_motor_power[run] = 0
+                    elif rd.profile_shaft_generator_1[run] == "PTO only":
+                        # the amount of power provided to cover auxiliary power utilisation
+                        # is limited by:
+                        # - fulfilling the auxiliary power requirement
+                        # - the availiable main engine power (in design phase this is not
+                        # accounted for because the engine can be sized for use with shaft
+                        # generator)
+                        # - the shaft generator size/capacity
+                        design.shaft_motor_power[run] = (min(+rd.profile_electrical_power_demand_1[run], +rd.shaft_generator_maximum_power[run]))/(rd.shaft_generator_pto_efficiency[run]/100)
+                    elif rd.profile_shaft_generator_1[run] == "PTI only":
+                        # the amount of power provided to cover main power utilisation is
+                        # limited by:
+                        # - fulfilling the main power requirement
+                        # - the available auxiliary engine power (in design phase this is
+                        # not accounted for because the engine can be sized for use with
+                        # shaft generator)
+                        # - the shaft generator size/capacity
+                        design.shaft_motor_power[run] = (min(-selected_profile.shaft_power[speed_draughts, run], -rd.shaft_generator_maximum_power[run]))/(rd.shaft_generator_pti_efficiency[run]/100)
+                    elif rd.profile_shaft_generator_1[run] == "PTO/PTI":
+                        # use PTO when possible, except when engine power is not large
+                        # enough then use PTI to provide additional engine power
+                        # engine power is not known at this stage so assume PTO (as above)
+                        design.shaft_motor_power[run] = (min(+rd.profile_electrical_power_demand_1[run], +rd.shaft_generator_maximum_power[run]))/(rd.shaft_generator_pto_efficiency[run]/100)
+                    else:
+                        # field has not been populated or "Not Used has been selected"
+                        pass
+                    # required shaft power accounting for PTO/PTI as specified in user
+                    # interface, this adds to previous wast heat energy
+                    if include_shaft_generator_in_design_phase == 1:
+                        selected_profile.shaft_power[speed_draughts, run] = selected_profile.shaft_power[speed_draughts, run]+design.shaft_motor_power[run]
+                        selected_profile.auxiliary_energy[speed_draughts, run] = selected_profile.auxiliary_energy[speed_draughts, run]-design.shaft_motor_power[run]
+                    else:
+                        # do not change energy use due to PTO/PTI
+                        pass
+                        selected_profile.shaft_power[speed_draughts, run] = selected_profile.shaft_power[speed_draughts, run]
+                        selected_profile.auxiliary_energy[speed_draughts, run] = rd.profile_electrical_power_demand_1[run]
+                    # same fuel demands that are in the first populated operating profile
+                    # are asssumed
+                    # select a new engine given the energy requirements:
+                    design.installed_main_engine_power[run], selected_profile.main_engine_sfc[speed_draughts, run], selected_profile.main_engine_co2_factor[speed_draughts, run], selected_profile.main_engine_sox_factor[speed_draughts, run], selected_profile.main_engine_nox_factor[speed_draughts, run], design.main_engine_mass[run], design.main_engine_length[run], design.no_of_auxiliary_engines[run], design.installed_auxiliary_engine_power[run], selected_profile.auxiliary_engine_sfc[speed_draughts, run], selected_profile.auxiliary_engine_co2_factor[speed_draughts, run], selected_profile.auxiliary_engine_sox_factor[speed_draughts, run], selected_profile.auxiliary_engine_nox_factor[speed_draughts, run], selected_profile.auxiliary_engine_mass[speed_draughts, run], selected_profile.auxiliary_engine_length[speed_draughts, run], design.auxiliary_engine_set_point[run] = marinesystemsandengine.engines(1, rd.profile_main_energy_source_1[run],
+                                                   sea_margin, engine_margin, rd.propulsion_type[run],
+                                                   rd.propulsors[run], design.shaft_power[run], engine_design_rpm,
+                                                   selected_profile.shaft_power[speed_draughts, run], engine_design_rpm,
+                                                   light_running_factor, design.shaft_motor_power[run],
+                                                   rd.profile_auxiliary_energy_source_1[run],
+                                                   rd.maximum_electrical_power_available[run],
+                                                   design.auxiliary_energy[run],
+                                                   selected_profile.auxiliary_energy[speed_draughts, run])
+                    # fuel consumption in particular condition that is being examined
+                    selected_profile.main_engine_fuel_tpd[speed_draughts, run] = selected_profile.main_engine_sfc[speed_draughts, run]*1000*selected_profile.shaft_power[speed_draughts, run]
+                    selected_profile.aux_engine_fuel_tpd[speed_draughts, run] = selected_profile.auxiliary_engine_sfc[speed_draughts, run]*1000*selected_profile.auxiliary_energy[speed_draughts, run]
+                    selected_profile.heat_fuel_tpd[speed_draughts, run] = selected_profile.boiler_fuel_energy_requirement[speed_draughts, run]*selected_profile_fuel_heat_energy_content
+                # averages
+                selected_profile.avg_speed[run] = np.sum(selected_profile.speed[:,run]*selected_operating_profile[:, 2])/np.sum(selected_operating_profile[:, 2])
+                selected_profile.avg_main_engine_fuel_tpd[run] = np.sum(selected_profile.main_engine_fuel_tpd[:,run]*selected_operating_profile[:, 2])/np.sum(selected_operating_profile[:, 2])
+                selected_profile.avg_aux_engine_fuel_tpd[run] = np.sum(selected_profile.aux_engine_fuel_tpd[:,run]*selected_operating_profile[:, 2])/np.sum(selected_operating_profile[:, 2])
+                selected_profile.avg_heat_fuel_tpd[run] = np.sum(selected_profile.heat_fuel_tpd[:,run]*selected_operating_profile[:, 2])/np.sum(selected_operating_profile[:, 2])
+                if (profile_index==0):
+                    # copy the selected_profile class to create a class for profile that has been examined
+                    class profile_1(selected_profile):
+                        pass   
+                elif (profile_index==1):
+                    # copy the selected_profile class to create a class for profile that has been examined
+                    class profile_2(selected_profile):
+                        pass
+                elif (profile_index==2):
+                    # copy the selected_profile class to create a class for profile that has been examined
+                    class profile_3(selected_profile):
+                        pass
+                elif (profile_index==3):
+                    # copy the selected_profile class to create a class for profile that has been examined
+                    class profile_4(selected_profile):
+                        pass
+                elif (profile_index==4):
+                    class profile_5(selected_profile):
+                        pass
+                else:
                     # an unlikely ERROR here somewhere
                     pass
-                        
-                    
                 
 
-            
-
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    
-                    UP TO HERE
-                # IN WORK
-                # np.savetxt('elected_operating_profile.csv', selected_operating_profile, delimiter=',')
-                # TO DO:
-                # CROSS CHECK elected_operating_profile.csv against input operating profile to see
-                # IN WORK
-                if operating profile has been modified correctly e.g. last column shouls add up to 1:
+## rd.profile_time_1[run] - consider later
+#
+#          
+#            ddsdrer
+#        l            
+#                    
+#                    
+#                    
+#                    
+#                                                   
+#                    # IN WORK HERE YOU NEED TO RE-ASSIGN selected profile back to "given" values - change values to those demanded by operating profile
+#                    
+#                    
+#                    # Needs to be outside loop???                    
+#                    
+#                    # IN WORK BOILER CALCULATION - PUT IN SEPARATE FILE MOVE TO CORRECT PLACE
+#                    # need to go from this...
+#                    selected_profile.heat_energy[speed_draughts, run]
+#                    
+#                    boiler_effiency = 0.80
+#                    
+#                    to this..
+#                    boiler_fuel_energy_requirement = 3500 # kW
+#                    fuel??.fuel_energy = 48000 # KJ/kg
+#                    
+#                    # IN WORK BOLER CALCULATION - PUT IN SEPERATE FILE MOVE TO CORRECT PLACE
+#                    
+#                fuel specification in kJ per Kj??
+#                
+#
+#                # convert to ddwefw
+#                
+#                
+#                see previous spreadsheet
+#                
+#                
+#                
+#                # additional fields required for ouputs
+#                selected_profile.avg_speed = np.zeros(number_of_runs)
+#                selected_profile.avg_fuel
+#                selected_profile.avg_nox
+#                selected_profile.
                 
-#                NEED TO FIND AND GO THROUGH THE NUMBER OF ROWS IN ARRAY 
-#                
-#                
-#            
-#            
-#            same - - - - - - - for design condition calculation
-#            
-#            
-#dd ddddddd d d dd d d d d
-#d d d d d d d d d
-#        sum(op_switch)
-#        
-#        d    
-#            
-            
+                
+                
+                
+
+    
+    # IN WORK
+    # create output array
+    # output_array
+    # IN WORK
+    
+    
+#    # output results to GloTraM
+#    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#    # import scipi.io
+#    import scipy.io as sio
+#    sio.matlab
+#    # IN WORK find these using countif or similar command (alternative is to put in loop)
+#    number_of_runs = 2 # IN WORK can remove this line
+#    number_of_ship_types = 2
+#    number_of_deadweights = 5
+#    number_of_fuel = 3
+#    number_of_tech = 4
+#    number_of_design_speeds = 2
+#    # IN WORK find these using countif or similar command (alternative is to put in loop)
+#    tema = np.zeros((number_of_runs,number_of_ship_types, number_of_deadweights, number_of_design_speeds,number_of_fuel,
+#                     number_of_tech,6))
+#    for run in range(number_of_runs):
+#        for j in range(number_of_ship_types):
+#            for k in range(number_of_design_speeds):
+#                for dwts in range(number_of_deadweights):
+#                    for fuels in range(number_of_fuel):
+#                        for techs in range(number_of_tech):
+#                                tema[run][j][k][dwts][fuels][techs][0] = design.cargo_capacity_te[run]
+#                                tema[run][j][k][dwts][fuels][techs][1] = design.lightweight[run]
+#                                tema[run][j][k][dwts][fuels][techs][2] = modifiers.additional_resistance[run]
+#                                tema[run][j][k][dwts][fuels][techs][3] = modifiers.propulsion_efficiency[run]
+#                                tema[run][j][k][dwts][fuels][techs][4] = j # IN WORK DELETE to test matrix
+#                                tema[run][j][k][dwts][fuels][techs][5] = run # IN WORK DELETE to test matrix
+#    sio.savemat('GloTraMshipdata.mat', {'ships':tema})
+     
+     
+     
+     
+        # design.technology_cost[run] = 0???
+        # design.total_cost[run]???
+        #  = 0
+        # modifiers.mass_impact[run] = 0
+        #  = 0     
+     
+     
+     
+     
+    #
+                
+                
+                
+                # run is first line on list
+                # design.lightweight[run], modifiers.additional_resistance[run],
+                # modifiers.propulsion_efficiency[run], modifiers.unit_purchase_cost[run]
+                
+                # go through run (1,2,3,..) and check design.cargo_capacity_te[run]
+                # and rd.design_speed[run] for changes
+
+#design.total_cost
+#design.technology_cost
+#profile_avg_an.cargo_load
+#profile_avg_an.displaced_volume
+#profile_avg_an.displacement
+#profile_avg_an.draught
+#profile_avg_an.fuel_consumption
+#profile_avg_an.speed
+#profile_avg_an.annual_cost
+#profile_avg_an.annual_technology_cost
+#profile_avg_an.co2_emissions
+#profile_avg_an.nox_emissions
+#profile_avg_an.sox_emissions
+#profile_avg_an.eedi                    
+                    
+                    
+                    
+                    
+                    
+#                                
+#                                
+#                                
+#                                UP TO HERE
+#                                
+#                                AFTER TREATMENT
+#                                
+#                                SPACE FOR DESIGN WIND CONDITION
+#                        
+#                        
+#                        
+#                  
+#                  PRE-SET VARIABLE LENGTHS SIMILAR TO DESIGN CONDITION      
+#                        
+#                        
+#                        CARRY ON ITERATION RUN RESISTANCE MODEL PROPELLER MODEL ETC. AS IN DESIGN
+#                        
+#                        add selected_profile pass
+#                        
+#                                                            
+#                                                            
+#                                                            
+#                                                            
+#                                                            
+#                    
+#                        
+#                        
+#                        
+#                        
+#                        
+#
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    # save operational condition
+#                    if (profile_index==0):
+#                        # copy the selected_profile class to create a new class
+#                        class profile_1(selected_profile):
+#                            pass
+#                    elif (profile_index==1):
+#                        # copy the selected_profile class to create a new class
+#                        class profile_1(selected_profile):
+#                            pass
+#                        
+#                        .
+#                        
+#                    profile_1.
+#
+#
+#
+#
+#profile_1.beam[speeds_draught]
+#profile_1.cargo_load[speeds_draught]
+#profile_1.displaced_volume[speeds_draught]
+#profile_1.displacement[speeds_draught]
+#profile_1.draught[speeds_draught]
+#profile_1.waterline_bow[speeds_draught]
+#profile_1.waterline_length[speeds_draught]
+#profile_1.waterline_stern[speeds_draught]
+#profile_1.waterplane_coefficient[speeds_draught]
+#
+## NEED ENOUGH VARIABLES TO ANALYSE WHERE ENERGY IS USED.
+#
+## COMMON FUEL LIST
+#
+#
+
+#
 #            UP TO HERE
-            
-        # --2nd-Iteration-in-Design--
-        # HERE IN WORK
-        
-        # call equipmentandstructure.py to get new displacement from selected
-        # equipment
-        
-        # HERE IN WORK
-        # find design condition operational characteristics according to the
-        # newly calculated "displacement"
-#        hgop = hullgenerator.operationaldraughtorcargo(run, hg, "displacement",
-#                                            displacement[run], water_density,
-#                                            rd.waterline_number)
-#                                            
-#        run resistance model
-#        
-        # UP TO HERE
-        
-        # TO DO NEXT:
-        
-        # import propulsor
-        # - RECALCULATE UP TO ENGINE FOR 2nd LOOP
-        # - FIX EXISTING PROBLEMS
-        # - CARRY OUT OPERATIONAL PERFORMANCE ANALYSIS
-        
-        
-        
-        
-        
-        # HERE IN WORK - PRINT VARIABLES TO CHECK RESULTS
-        # displacement is incorrect at the moment
-        # print('Displacement: ' + repr(displacement[run]) + 'tonnes')
-        print('design.kg: ' + repr(design.kg) + 'metres')
-        print('Total Resistance: ' + repr(design.total_resistance[run]) + 'kN')
-        print('Shaft Power: ' + repr(design.shaft_power[run]) + 'kW')
-        
-        
-        
-        # HERE IN WORK - PRINT VARIABLES TO CHECK RESULTS
-                                       
-                                       
-                                       
-# UP TO HERE
-                                       
-# ROUGH NOTES ARE BELOW
+#                                        else:
+#                    # an unlikely ERROR here somewhere
+#                    pass
+#                        
+#                    
+#                
 #
-#        ENGINE TO ENGINE
-#        
-#        
-#        
-#        ACCOUNT FOR SHAFT GENERATOR
-#        THEN PROPELLER MODEL USE NUMBER FOR NOW
-#        THEN ENGINE MODEL AND MARINE SYSTEM SIZING AGAIN
-#        need to ensure im not adding on power change due to whr and shaft each time
-#        ADD STUFF TO USER INTERFACE
-#        
-#        
-#        
-#        # TO DO NEXT,
+#            
 #
-#        THEN
-#        RUN WORK SO FAR
-#        
-#        ADD PROPELLER NEXT AND SPACE FOR CRT INTERFACE WITH ADDITIONAL
-#        LOOP FOR ITERATION.
-#        
-#        THEN HEAD ON TO OPERATIONAL PERFORMANCE CALCULATION
-#        
-#        
-#        # WHAT DO YOU DO WITH THE BELOW TEXT?
-#                nPropDesign = propeller_design_speed # NOT IN INTERFACE YET
-#        )
-#        
-#        engine_power, engine_mass, engine_length,
-#        engine_sfc[functionofenginerating]
-#        engine_NOx
-#        engine_SOx
-#        engine_speed
-#        
-#        = engine(fuel_type, engine_power, engine_torque
-#        
-#        
-#        
-#        #            in operational condition also need to available propulsion power for PTO and from engine?? assume that power is available in design condition.
-##            add additional item to min formula that is design.shaft_power[run]-design.shaft_power[run])
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    
+#                    UP TO HERE
+#                # IN WORK
+#                # np.savetxt('elected_operating_profile.csv', selected_operating_profile, delimiter=',')
+#                # TO DO:
+#                # CROSS CHECK elected_operating_profile.csv against input operating profile to see
+#                # IN WORK
+#                if operating profile has been modified correctly e.g. last column shouls add up to 1:
+#                
+##                NEED TO FIND AND GO THROUGH THE NUMBER OF ROWS IN ARRAY 
+##                
+##                
 ##            
 ##            
-##            design.shaft_motor_power[run] = -rd.profile_shaft_generator_1
+##            same - - - - - - - for design condition calculation
 ##            
 ##            
-##            
-##            
-##                    % always use PTO to provide auxiliary power, when possible
-##        % the amount of power provided to cover auxiliary power utilisation is limited by: - fulfilling the auxiliary power requirement - the availiable main engine power - the shaft generator size/capacity
-##        SelectedShipDesignOperation(9,index,technum,range1,range2)=-min([(SelectedShipDesignOperation(6,index,technum,range1,range2)) (SelectedShipPowering(7,technum,range1,range2)-SelectedShipDesignOperation(3,index,technum,range1,range2)) (SelectedShipPowering(19,technum,range1,range2))])-DesignChSP+ChSP;
-##        % minus (-) sign convention denotes power coming from main engine
-##        % to auxiliary engine (not considering effiency a this point)
-##        % calculate efficiency
-##        if ((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))<0.5)
-##            % linearly interpolate between 0 and 0.5 to find efficiency
-##            SelectedShipDesignOperation(10,index,technum,range1,range2)=SelectedShipFuel{4,4,technum}+((SelectedShipFuel{4,3,technum}-SelectedShipFuel{4,4,technum})/(0.5-0.0))*((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))-0.0);
-##        elseif ((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))<1.0)
-##            % linearly interpolate between 0.5 and 1.0 to find efficiency
-##            SelectedShipDesignOperation(10,index,technum,range1,range2)=SelectedShipFuel{4,3,technum}+((SelectedShipFuel{4,2,technum}-SelectedShipFuel{4,3,technum})/(1.0-0.5))*((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))-0.5);
-##        else
-##            % mistake here somewhere or efficiency is 100%, use 100% load
-##            % efficiency value
-##            SelectedShipDesignOperation(10,index,technum,range1,range2)=SelectedShipFuel{4,2,technum};
-##        end
-##        % new main engine power (accounting for calculated efficiency)
-##        SelectedShipDesignOperation(3,index,technum,range1,range2)=SelectedShipDesignOperation(3,index,technum,range1,range2)-(SelectedShipDesignOperation(9,index,technum,range1,range2)/(1-SelectedShipDesignOperation(10,index,technum,range1,range2)));
-##        % new auxiliary engine power
-##        SelectedShipDesignOperation(6,index,technum,range1,range2)=SelectedShipDesignOperation(6,index,technum,range1,range2)+SelectedShipDesignOperation(9,index,technum,range1,range2);
-##    elseif (inputship(11)==3);
-##        % always use PTI to provide main power, when possible
+##dd ddddddd d d dd d d d d
+##d d d d d d d d d
+##        sum(op_switch)
 ##        
-##        ASSUME DESIGN CONDITION VALUE IS USED.
+##        d    
+##            
+#            
+##            UP TO HERE
+#            
+#        # --2nd-Iteration-in-Design--
+#        # HERE IN WORK
+#        
+#        # call equipmentandstructure.py to get new displacement from selected
+#        # equipment
+#        
+#        # HERE IN WORK
+#        # find design condition operational characteristics according to the
+#        # newly calculated "displacement"
+##        hgop = hullgenerator.operationaldraughtorcargo(run, hg, "displacement",
+##                                            displacement[run], rd.water_density[run],
+##                                            rd.waterline_number)
+##                                            
+##        run resistance model
+##        
+#        # UP TO HERE
+#        
+#        # TO DO NEXT:
+#        
+#        # import propulsor
+#        # - RECALCULATE UP TO ENGINE FOR 2nd LOOP
+#        # - FIX EXISTING PROBLEMS
+#        # - CARRY OUT OPERATIONAL PERFORMANCE ANALYSIS
+#        
+#        
+#        
+#        
+#        
+#        # HERE IN WORK - PRINT VARIABLES TO CHECK RESULTS
+#        # displacement is incorrect at the moment
+#        # print('Displacement: ' + repr(displacement[run]) + 'tonnes')
+#        print('design.kg: ' + repr(design.kg) + 'metres')
+#        print('Total Resistance: ' + repr(design.total_resistance[run]) + 'kN')
+#        print('Shaft Power: ' + repr(design.shaft_power[run]) + 'kW')
+#        
+#        
+#        
+#        # HERE IN WORK - PRINT VARIABLES TO CHECK RESULTS
+#                                       
+#                                       
+#                                       
+## UP TO HERE
+#                                       
+## ROUGH NOTES ARE BELOW
+##
+##        ENGINE TO ENGINE
+##        
+##        
+##        
+##        ACCOUNT FOR SHAFT GENERATOR
+##        THEN PROPELLER MODEL USE NUMBER FOR NOW
+##        THEN ENGINE MODEL AND MARINE SYSTEM SIZING AGAIN
+##        need to ensure im not adding on power change due to whr and shaft each time
+##        ADD STUFF TO USER INTERFACE
+##        
+##        
+##        
+##        # TO DO NEXT,
+##
+##        THEN
+##        RUN WORK SO FAR
+##        
+##        ADD PROPELLER NEXT AND SPACE FOR CRT INTERFACE WITH ADDITIONAL
+##        LOOP FOR ITERATION.
+##        
+##        THEN HEAD ON TO OPERATIONAL PERFORMANCE CALCULATION
+##        
+##        
+##        # WHAT DO YOU DO WITH THE BELOW TEXT?
+##                nPropDesign = propeller_design_speed # NOT IN INTERFACE YET
+##        )
+##        
+##        engine_power, engine_mass, engine_length,
+##        engine_sfc[functionofenginerating]
+##        engine_NOx
+##        engine_SOx
+##        engine_speed
+##        
+##        = engine(fuel_type, engine_power, engine_torque
+##        
+##        
+##        
+##        #            in operational condition also need to available propulsion power for PTO and from engine?? assume that power is available in design condition.
+###            add additional item to min formula that is design.shaft_power[run]-design.shaft_power[run])
+###            
+###            
+###            design.shaft_motor_power[run] = -rd.profile_shaft_generator_1
+###            
+###            
+###            
+###            
+###                    % always use PTO to provide auxiliary power, when possible
+###        % the amount of power provided to cover auxiliary power utilisation is limited by: - fulfilling the auxiliary power requirement - the availiable main engine power - the shaft generator size/capacity
+###        SelectedShipDesignOperation(9,index,technum,range1,range2)=-min([(SelectedShipDesignOperation(6,index,technum,range1,range2)) (SelectedShipPowering(7,technum,range1,range2)-SelectedShipDesignOperation(3,index,technum,range1,range2)) (SelectedShipPowering(19,technum,range1,range2))])-DesignChSP+ChSP;
+###        % minus (-) sign convention denotes power coming from main engine
+###        % to auxiliary engine (not considering effiency a this point)
+###        % calculate efficiency
+###        if ((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))<0.5)
+###            % linearly interpolate between 0 and 0.5 to find efficiency
+###            SelectedShipDesignOperation(10,index,technum,range1,range2)=SelectedShipFuel{4,4,technum}+((SelectedShipFuel{4,3,technum}-SelectedShipFuel{4,4,technum})/(0.5-0.0))*((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))-0.0);
+###        elseif ((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))<1.0)
+###            % linearly interpolate between 0.5 and 1.0 to find efficiency
+###            SelectedShipDesignOperation(10,index,technum,range1,range2)=SelectedShipFuel{4,3,technum}+((SelectedShipFuel{4,2,technum}-SelectedShipFuel{4,3,technum})/(1.0-0.5))*((-SelectedShipDesignOperation(9,index,technum,range1,range2)/SelectedShipPowering(19,technum,range1,range2))-0.5);
+###        else
+###            % mistake here somewhere or efficiency is 100%, use 100% load
+###            % efficiency value
+###            SelectedShipDesignOperation(10,index,technum,range1,range2)=SelectedShipFuel{4,2,technum};
+###        end
+###        % new main engine power (accounting for calculated efficiency)
+###        SelectedShipDesignOperation(3,index,technum,range1,range2)=SelectedShipDesignOperation(3,index,technum,range1,range2)-(SelectedShipDesignOperation(9,index,technum,range1,range2)/(1-SelectedShipDesignOperation(10,index,technum,range1,range2)));
+###        % new auxiliary engine power
+###        SelectedShipDesignOperation(6,index,technum,range1,range2)=SelectedShipDesignOperation(6,index,technum,range1,range2)+SelectedShipDesignOperation(9,index,technum,range1,range2);
+###    elseif (inputship(11)==3);
+###        % always use PTI to provide main power, when possible
+###        
+###        ASSUME DESIGN CONDITION VALUE IS USED.
+###        
+###        
+###        # HERE IN WORK
+###        
+###        
+###        
+###        # SORT OUT SHAFT GENERATOR
+###       # needs to follow MODE given in operating profile!
+###        # needs to pass usage to engine function!!!
+###        
+###        # SORT OUT HEAT USEAGE, IF NO OTHER MEANS, COMES FROM AUXILIARY ENGINE
+###        # SPACE FOR WASTE HEAT RECOVERY PLANT
+##        
+##        
+##        ENGINE DESIGN RPM NEEDS TO LINE UP WITH PROPELLER ASSUMPTIONS
+##        
+##        
+##        
+##        
+##        
+##        
 ##        
 ##        
 ##        # HERE IN WORK
+##        # generate operating profile from external file
+##        import readinput
+##        op_profiles, op_switch = readinput.operatingprofile(rd.design_speed[run],
+##                    design.draught[run], rd.cargo_capacity_te[run], rd.profile_location_1[run],
+##                    rd.profile_location_2[run], rd.profile_location_3[run], rd.profile_location_4[run],
+##                    rd.profile_location_5[run], rd.profile_cargo_or_draught_1[run],
+##                    rd.profile_cargo_or_draught_2[run], rd.profile_cargo_or_draught_3[run],
+##                    rd.profile_cargo_or_draught_4[run], rd.profile_cargo_or_draught_5[run])
+##        # examine up to five operational conditions defined by user
+##        for operation in range(5):
+##            if op_switch[operation] != 1:
+##                pass
+##                # operating profile has not been investigated by the user
+##            else:
+##                # equal to 1 continue
+##                # save operation.operating_profile to use in current loop
+##                if (operation+1) == 1:
+##                    operation.operating_profile = op_profiles.op_1
+##                if (operation+1) == 2:
+##                    operation.operating_profile = op_profiles.op_2
+##                if (operation+1) == 3:
+##                    operation.operating_profile = op_profiles.op_3
+##                if (operation+1) == 4:
+##                    operation.operating_profile = op_profiles.op_4
+##                if (operation+1) == 5:
+##                    operation.operating_profile = op_profiles.op_5
+##                    
+##        UP TO HERE
 ##        
+##        GO THROUGH LOOP AGAIN FOR SPEED AND DRAUGHTS DEFINED IN OPERATING PROFILE
+##                        
+##                        
+##        UP TO HERE
 ##        
+##        # NEED TO IGNORE NON-POPULATED OP_1, OP_2, etc.
 ##        
-##        # SORT OUT SHAFT GENERATOR
-##       # needs to follow MODE given in operating profile!
-##        # needs to pass usage to engine function!!!
-##        
-##        # SORT OUT HEAT USEAGE, IF NO OTHER MEANS, COMES FROM AUXILIARY ENGINE
-##        # SPACE FOR WASTE HEAT RECOVERY PLANT
-#        
-#        
-#        ENGINE DESIGN RPM NEEDS TO LINE UP WITH PROPELLER ASSUMPTIONS
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        
-#        # HERE IN WORK
-#        # generate operating profile from external file
-#        import readinput
-#        op_profiles, op_switch = readinput.operatingprofile(rd.design_speed[run],
-#                    design.draught[run], rd.cargo_capacity_te[run], rd.profile_location_1[run],
-#                    rd.profile_location_2[run], rd.profile_location_3[run], rd.profile_location_4[run],
-#                    rd.profile_location_5[run], rd.profile_cargo_or_draught_1[run],
-#                    rd.profile_cargo_or_draught_2[run], rd.profile_cargo_or_draught_3[run],
-#                    rd.profile_cargo_or_draught_4[run], rd.profile_cargo_or_draught_5[run])
-#        # examine up to five operational conditions defined by user
-#        for operation in range(5):
-#            if op_switch[operation] != 1:
-#                pass
-#                # operating profile has not been investigated by the user
-#            else:
-#                # equal to 1 continue
-#                # save operation.operating_profile to use in current loop
-#                if (operation+1) == 1:
-#                    operation.operating_profile = op_profiles.op_1
-#                if (operation+1) == 2:
-#                    operation.operating_profile = op_profiles.op_2
-#                if (operation+1) == 3:
-#                    operation.operating_profile = op_profiles.op_3
-#                if (operation+1) == 4:
-#                    operation.operating_profile = op_profiles.op_4
-#                if (operation+1) == 5:
-#                    operation.operating_profile = op_profiles.op_5
-#                    
-#        UP TO HERE
-#        
-#        GO THROUGH LOOP AGAIN FOR SPEED AND DRAUGHTS DEFINED IN OPERATING PROFILE
-#                        
-#                        
-#        UP TO HERE
-#        
-#        # NEED TO IGNORE NON-POPULATED OP_1, OP_2, etc.
-#        
-#        UP TO HERE        
-#
-#        
-#
-#        
-#
-#        TORQUE SHOULD BE OUTPUT FROM PROPELLER MODEL
-#        
-#        
-#        # need to examined what is in Matlab Model, e.g. how engine is loaded
-#        # initially for engin speed and how techparameters is used.
-#        # IN WORK
-#        
-#        # calculation required before propeller model
-#        # find design condition and operational engine speeds
-#        
-#        # find engine_design_speed for the assumed engine size and by
-#        # considering the powering margin (1-powering margin is engine rating)
-#        design.engine_design_rating = (1-(rd.powering_margin/100))
-#        if (design.engine_design_rating<=0.25):
-#            nDesign=EngSpeedat25MCR
-#        elif (design.engine_design_rating<0.50):
-#            # linearly interpolate between 0.25 and 0.50
-#            nDesign=EngSpeedat25MCR+((EngSpeedat50MCR-EngSpeedat25MCR)*(design.engine_design_rating-0.25)/(0.50-0.25))
-#        elif (design.engine_design_rating==0.50):
-#            nDesign=EngSpeedat50MCR
-#        elif (design.engine_design_rating<0.75):
-#            # linearly interpolate between 0.50 and 0.75
-#            nDesign=EngSpeedat50MCR+((EngSpeedat75MCR-EngSpeedat50MCR)*(design.engine_design_rating-0.50)/(0.75-0.50))
-#        elif (design.engine_design_rating==0.75):
-#            nDesign=EngSpeedat75MCR
-#        elif (design.engine_design_rating<1.00):
-#            # linearly interpolate between 0.75 and 1.00
-#            nDesign=EngSpeedat75MCR+((EngSpeedat100MCR-EngSpeedat75MCR)*(design.engine_design_rating-0.75)/(1.00-0.75))
-#        else:
-#            # (MCR>=1.00)
-#            nDesign=EngSpeedat100MCR # cannot exceed 100% MCR
-#        # Find Operational Engine Speed (nOperation) by considering design.shaft_power[run]
-#        MCR=design.shaft_power[run]/MainEngPower
-#        if (MCR<=0.25):
-#            nOperation=EngSpeedat25MCR
-#        elif (MCR<0.50):
-#            # linearly interpolate between 0.25 and 0.50
-#            nOperation=EngSpeedat25MCR+((EngSpeedat50MCR-EngSpeedat25MCR)*(MCR-0.25)/(0.50-0.25))
-#        elif (MCR==0.50):
-#            nOperation=EngSpeedat50MCR
-#        elif (MCR<0.75):
-#            # linearly interpolate between 0.50 and 0.75
-#            nOperation=EngSpeedat50MCR+((EngSpeedat75MCR-EngSpeedat50MCR)*(MCR-0.50)/(0.75-0.50))
-#        elif (MCR==0.75):
-#            nOperation=EngSpeedat75MCR
-#        elif (MCR<1.00):
-#            # linearly interpolate between 0.75 and 1.00
-#            nOperation=EngSpeedat75MCR+((EngSpeedat100MCR-EngSpeedat75MCR)*(MCR-0.75)/(1.00-0.75))
-#        else:
-#            # (MCR>=1.00)
-#            nOperation=EngSpeedat100MCR # cannot exceed 100% MCR
-#        % UP TO HERE
-#        
-#        
-#        
-#        nDesign
-#        
-#        
-#        
-#        
-#        
-#        
-#        # UP TO HERE
-#        
-#        
-#        # Foul, ChR?
-##        
-##        I have a outline for a windassist function with the following:
-##        INPUTS
-##        GZ or Righting Moment as function of heel angle
-##        Ship speed demand
-##        Ship heading demand
-##        Wind Speed relative to ship
-##        Wind Direction relative to ship
-##        availabe deck area for sizing
-##        
-##        OUTPUTS
-##        Weight
-##        Cost
-##        Additional Thrust provided by sail
-##        Added Resistance due to sail (e.g. equivalent due to rudder corrections and heel)
-##        
-##        This needs to be run to find the design phase of the sail.  We need to
-##        do this for real time voyage and for "average wind conditions".  For
-##        average wind conditions the inner loop can be precalculated to save time.
-##        
-##        In the design phase it is necessary to specify how sail is used and this
-##        call of the wind function can also be used to precalculate variables.
-#        
-#        
-#        #import propulsormodel
-#        # find righting moment and KG for wind assist
-#        #import windassist THIS NEEDS TO ACCESS WIND DATA
-#
-#        # USE NUMPY FUNCTIONS FOR PRE ASSIGNING ARRAYS LENGTHS WHERE POSSIBLE
+##        UP TO HERE        
 ##
-##Z=4;  % Z number of propeller blades, can use 4 as estimate, could be 6 for very
-##% large ships.
+##        
 ##
-##% Twin - Single (1) or Twin (2) propulsion arrangement
+##        
 ##
-##% L - Ship waterline length
-##% T - Draught
-##% B - Beam
-##% Cp - prismatic coefficient
-##% LCB - Longitudinal centre of buoyancy position (from AP/assumes from AP)
-##% NOTE THIS IS ASSUMED THE SAME AS LCG SOMEWHERE, IF NOT SURE YOU CAN USE
-##% L/2
-##% D - propeller diameter
-##% Foul - User Demanded fouling condition, expressed as percentage increase
-##% in resistance (12.25% could be used for a rough approximate)
+##        TORQUE SHOULD BE OUTPUT FROM PROPELLER MODEL
+##        
+##        
+##        # need to examined what is in Matlab Model, e.g. how engine is loaded
+##        # initially for engin speed and how techparameters is used.
+##        # IN WORK
+##        
+##        # calculation required before propeller model
+##        # find design condition and operational engine speeds
+##        
+##        # find engine_design_speed for the assumed engine size and by
+##        # considering the powering margin (1-powering margin is engine rating)
+##        design.engine_design_rating = (1-(rd.powering_margin/100))
+##        if (design.engine_design_rating<=0.25):
+##            nDesign=EngSpeedat25MCR
+##        elif (design.engine_design_rating<0.50):
+##            # linearly interpolate between 0.25 and 0.50
+##            nDesign=EngSpeedat25MCR+((EngSpeedat50MCR-EngSpeedat25MCR)*(design.engine_design_rating-0.25)/(0.50-0.25))
+##        elif (design.engine_design_rating==0.50):
+##            nDesign=EngSpeedat50MCR
+##        elif (design.engine_design_rating<0.75):
+##            # linearly interpolate between 0.50 and 0.75
+##            nDesign=EngSpeedat50MCR+((EngSpeedat75MCR-EngSpeedat50MCR)*(design.engine_design_rating-0.50)/(0.75-0.50))
+##        elif (design.engine_design_rating==0.75):
+##            nDesign=EngSpeedat75MCR
+##        elif (design.engine_design_rating<1.00):
+##            # linearly interpolate between 0.75 and 1.00
+##            nDesign=EngSpeedat75MCR+((EngSpeedat100MCR-EngSpeedat75MCR)*(design.engine_design_rating-0.75)/(1.00-0.75))
+##        else:
+##            # (MCR>=1.00)
+##            nDesign=EngSpeedat100MCR # cannot exceed 100% MCR
+##        # Find Operational Engine Speed (nOperation) by considering design.shaft_power[run]
+##        MCR=design.shaft_power[run]/MainEngPower
+##        if (MCR<=0.25):
+##            nOperation=EngSpeedat25MCR
+##        elif (MCR<0.50):
+##            # linearly interpolate between 0.25 and 0.50
+##            nOperation=EngSpeedat25MCR+((EngSpeedat50MCR-EngSpeedat25MCR)*(MCR-0.25)/(0.50-0.25))
+##        elif (MCR==0.50):
+##            nOperation=EngSpeedat50MCR
+##        elif (MCR<0.75):
+##            # linearly interpolate between 0.50 and 0.75
+##            nOperation=EngSpeedat50MCR+((EngSpeedat75MCR-EngSpeedat50MCR)*(MCR-0.50)/(0.75-0.50))
+##        elif (MCR==0.75):
+##            nOperation=EngSpeedat75MCR
+##        elif (MCR<1.00):
+##            # linearly interpolate between 0.75 and 1.00
+##            nOperation=EngSpeedat75MCR+((EngSpeedat100MCR-EngSpeedat75MCR)*(MCR-0.75)/(1.00-0.75))
+##        else:
+##            # (MCR>=1.00)
+##            nOperation=EngSpeedat100MCR # cannot exceed 100% MCR
+##        % UP TO HERE
+##        
+##        
+##        
+##        nDesign
+##        
+##        
+##        
+##        
+##        
+##        
+##        # UP TO HERE
+##        
+##        
+##        # Foul, ChR?
+###        
+###        I have a outline for a windassist function with the following:
+###        INPUTS
+###        GZ or Righting Moment as function of heel angle
+###        Ship speed demand
+###        Ship heading demand
+###        Wind Speed relative to ship
+###        Wind Direction relative to ship
+###        availabe deck area for sizing
+###        
+###        OUTPUTS
+###        Weight
+###        Cost
+###        Additional Thrust provided by sail
+###        Added Resistance due to sail (e.g. equivalent due to rudder corrections and heel)
+###        
+###        This needs to be run to find the design phase of the sail.  We need to
+###        do this for real time voyage and for "average wind conditions".  For
+###        average wind conditions the inner loop can be precalculated to save time.
+###        
+###        In the design phase it is necessary to specify how sail is used and this
+###        call of the wind function can also be used to precalculate variables.
+##        
+##        
+##        #import propulsormodel
+##        # find righting moment and KG for wind assist
+##        #import windassist THIS NEEDS TO ACCESS WIND DATA
+##
+##        # USE NUMPY FUNCTIONS FOR PRE ASSIGNING ARRAYS LENGTHS WHERE POSSIBLE
+###
+###Z=4;  % Z number of propeller blades, can use 4 as estimate, could be 6 for very
+###% large ships.
+###
+###% Twin - Single (1) or Twin (2) propulsion arrangement
+###
+###% L - Ship waterline length
+###% T - Draught
+###% B - Beam
+###% Cp - prismatic coefficient
+###% LCB - Longitudinal centre of buoyancy position (from AP/assumes from AP)
+###% NOTE THIS IS ASSUMED THE SAME AS LCG SOMEWHERE, IF NOT SURE YOU CAN USE
+###% L/2
+###% D - propeller diameter
+###% Foul - User Demanded fouling condition, expressed as percentage increase
+###% in resistance (12.25% could be used for a rough approximate)
+###
+###
+###% check that Rt is not below 0 (could happen for sails and results in
+###% negative fuel consumption)
+###if Rt<0
+###    Rt=0;
+###else
+###    % do not change Rt, likely in most cases
+###end
+###
 ##
 ##
-##% check that Rt is not below 0 (could happen for sails and results in
-##% negative fuel consumption)
-##if Rt<0
-##    Rt=0;
-##else
-##    % do not change Rt, likely in most cases
-##end
 ##
-#
-#
-#
-## NEED TO ENSURE CHECK BOXES WORK CORRECTLY
+### NEED TO ENSURE CHECK BOXES WORK CORRECTLY
