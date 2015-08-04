@@ -16,9 +16,7 @@ light_running_factor [%] Extra revolutions required to account for fouling
 
 """
 
-
 from GEM import run_gem
-
 
 #
 # MAIN ENGINE POWER REQUIREMENTS
@@ -53,8 +51,8 @@ RPM_RUN = 75.0      # rpm at present running conditions [rpm]
 # hotel_load_design = design hotel load, in kW, this is the load
 #                     at 85% MCR of GenSet
 # hotel_load_service = service hotel load, in kW
-HOTEL_LOAD_DESIGN = 650.0
-HOTEL_LOAD_SERVICE = 525.0
+HOTEL_LOAD_DESIGN = 650.0  # design hotel load [kW], ie load at 85% MCR
+HOTEL_LOAD_SERVICE = 525.0 # service hotel load [kW]
 
 #
 # SHAFT GENERATOR

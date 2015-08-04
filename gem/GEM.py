@@ -5,6 +5,8 @@ Created on Thu May 14 11:05:48 2015
 @author: David Trodden <David.Trodden@ncl.ac.uk>
 """
 
+# TODO go through changing the word "hotel" to something like aux_requirement
+
 import sys
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline
@@ -95,7 +97,6 @@ def sfoc_at_point(sfoc_gradient, sfoc_intercept, pc_mcr, mcr_p, run_p,
     y_four = spline(0.4*mcr_p)-0.602/100.0*spline(0.4*mcr_p)
     #y_four = s(0.4*MP) # No correction!
 
-
     # calculate new spline, corrected for low MCR points
     xi_corrected = np.array([x_four, x_three, x_two, x_one])
     yi_corrected = np.array([y_four, y_three, y_two, y_one])
@@ -103,23 +104,24 @@ def sfoc_at_point(sfoc_gradient, sfoc_intercept, pc_mcr, mcr_p, run_p,
     spline_corrected = InterpolatedUnivariateSpline(xi_corrected, \
                                                     yi_corrected, k=order)
 
-
     # calculate running power as a percentage of MCR
     run_p_pc = 100.0-(mcr_p-run_p)/mcr_p*100
 
+    # interpolate spline for value of sfoc
     sfoc = spline_corrected(run_p_pc/100.0*mcr_p)
+    #sfoc = spline(run_p_pc/100.0*mcr_p)
 
     # plot %SMCR vs SFOC
     # go from 30% to 105% SMCR
     if plot == True:
         x_num = np.linspace(0.3*mcr_p, 1.05*mcr_p, 100)
-        y0_num = spline(x_num)
-        y_num = spline_corrected(x_num)
+        #y0_num = spline(x_num)
+        y1_num = spline_corrected(x_num)
         plt.figure()
-        plt.plot(x_num/mcr_p*100.0, y0_num)
-        plt.plot(x_num/mcr_p*100.0, y_num)
+        #plt.plot(x_num/mcr_p*100.0, y0_num)
+        plt.plot(x_num/mcr_p*100.0, y1_num)
         plt.plot(run_p_pc, sfoc, 'ro')
-        plt.title('SFOC Curve')
+        plt.title('SFOC Curve for Main Engine')
         plt.ylabel('SFOC [g/kWh]')
         plt.xlabel('% of MCR')
         plt.grid(True)
@@ -297,7 +299,11 @@ class powering_specs:
     """
     Propulsion and Auxiliary Engine Powering Calculations
     """
-    def __init__(self, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design, hotel_load_service, pto, eta_pto, cpp, sea_margin, main_engine_margin, light_running_factor, aux_engine_margin, main_engine_type, aux_engine_type, fuel_type_main, fuel_type_aux):
+    def __init__(self, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design,
+                 hotel_load_service, pto, eta_pto, cpp, sea_margin,
+                 main_engine_margin, light_running_factor, aux_engine_margin,
+                 main_engine_type, aux_engine_type, fuel_type_main,
+                 fuel_type_aux, green_technologies):
 
         # attributes that are passed through initialisation        
         self.q_trial = q_trial
@@ -317,6 +323,7 @@ class powering_specs:
         self.aux_engine_type = aux_engine_type
         self.fuel_type_main = fuel_type_main
         self.fuel_type_aux = fuel_type_aux
+        self.green_technologies = green_technologies
         
         # attributes that are calculated
         self.rpm_service = 0.0
@@ -327,16 +334,32 @@ class powering_specs:
         self.p_service = 0.0
 
         self.hotel_load_max = 0.0
+        self.total_aux_engines_required = 0
+        self.total_aux_mcr = 0.0
         
         self.main_engine_designation = "not assigned"
         self.aux_engine_designation = "not assigned"
         
         self.sfoc_main_at_run = 0.0
         self.sfoc_aux_at_run = 0.0
-        
+
+        self.specific_co2_main_engine = 0.0
+        self.specific_co2_aux_engine = 0.0
+        self.specific_co2_total = 0.0
         self.co2_main_engine = 0.0
         self.co2_aux_engine = 0.0
         self.co2_total = 0.0
+
+        # TODO need to implement the mass and length calculations
+        self.main_engine_mass = 0.0
+        self.main_engine_length = 0.0
+        self.aux_engine_mass = 0.0
+        self.aux_engine_length = 0.0
+
+        # changes in emissions from use of different green technologies
+        self.delta_CO2 = 0.0
+        self.delta_SOX = 0.0
+        self.delta_NOX = 0.0
 
         # some input checks        
         if self.main_engine_type < 1 or self.main_engine_type > 2:
@@ -393,6 +416,9 @@ class powering_specs:
         # calculate power in current running conditions
         self.p_run = self.q_run*2.0*np.pi*self.rpm_run/60.0+self.pto
 
+        #print("q_service =", self.p_service/(2.0*np.pi*self.rpm_service/60.0+self.pto))
+        #print("rpm_service =", self.rpm_service)
+
     def aux_engine_requirements(self):
         """
         Hotel Load Powering Requirements
@@ -448,20 +474,18 @@ class powering_specs:
                         else:
                             # estimate SFOC at point L1 for the
                             # selected engine and fuel
-                            f_l1_sfoc_tmp = fuel_type_sfoc(self.fuel_type_main, two_stroke_main_db[opt_engine_index]["L1SFOC"])
+                            f_l1_sfoc_tmp = fuel_type_sfoc(self.fuel_type_main, two_stroke_main_db[i]["L1SFOC"])
 
                             # calculate SFOC at Service Propulsion Point
                             if self.cpp == False:
-                                sfoc = sfoc_at_point(two_stroke_main_db[
-                                        opt_engine_index]["m_FPP"],
-                                        two_stroke_main_db[opt_engine_index]["c_FPP"],
-                                        two_stroke_main_db[opt_engine_index]["pc_mcr"],
+                                sfoc = sfoc_at_point(two_stroke_main_db[i]["m_FPP"],
+                                        two_stroke_main_db[i]["c_FPP"],
+                                        two_stroke_main_db[i]["pc_mcr"],
                                         self.p_mcr, self.p_service, f_l1_sfoc_tmp, mep_pc, False)
                             else:
-                                sfoc = sfoc_at_point(two_stroke_main_db[
-                                        opt_engine_index]["m_CPP"],
-                                        two_stroke_main_db[opt_engine_index]["c_CPP"],
-                                        two_stroke_main_db[opt_engine_index]["pc_mcr"],
+                                sfoc = sfoc_at_point(two_stroke_main_db[i]["m_CPP"],
+                                        two_stroke_main_db[i]["c_CPP"],
+                                        two_stroke_main_db[i]["pc_mcr"],
                                         self.p_mcr, self.p_service, f_l1_sfoc_tmp, mep_pc, False)
 
                             # remember engine with the lowest SFOC at Service Point
@@ -483,6 +507,10 @@ class powering_specs:
         #ep = 1
         #PM = 37098.0
         #RPMM = 76.0
+        # MAN B&W S65ME-C8.5-TII 
+        #print("MAN B&W S65ME-C8.5-TII index =", two_stroke_main_db[7]["designation"])
+        #opt_engine_index = 7
+        #opt_piston_number = 0
 
         self.main_engine_designation = 'Two-stroke, ' + str(two_stroke_main_db[opt_engine_index]["Npiston"][opt_piston_number]) + ' Cylinder ' + two_stroke_main_db[opt_engine_index]["designation"]        
         
@@ -526,9 +554,6 @@ class powering_specs:
                            two_stroke_main_db[opt_engine_index]["c_CPP"], \
                            two_stroke_main_db[opt_engine_index]["pc_mcr"], \
                            self.p_mcr, self.p_run, f_l1_sfoc_tmp, mep_pc, True)
-
-
-
  
  
     def select_main_four_stroke(self):
@@ -604,7 +629,7 @@ class powering_specs:
         original remit
         """
 
-        # find the most powerfull engine from aux_engine database
+        # find the most powerful engine from aux_engine database
         aux_max = 0.0
         for i in range(len(four_stroke_aux_db)):
             aux_power = four_stroke_aux_db[i]["GenP"][len(four_stroke_aux_db[i]["GenP"])-1]
@@ -615,51 +640,86 @@ class powering_specs:
         aux_max = aux_max*(1.0+0.15)
 
         aux_max_engines_required = 0 # number of maximum power aux_engines required
+        aux_mod_engines_required = 0 # number of lesser power aux_engines required
+        
         if self.hotel_load_max < aux_max:
             # only one aux_engine is required to satisfy the maximum Hotel Load
             # requirement
             # run through the database of aux_engines, and select the smallest one
             # which satisfies the maximum hotel load requirements
+
+            # it would be more efficient to break out of the nested for loops,
+            # but it seems hard work in python!
+            got = False
             for i in range(len(four_stroke_aux_db)):
                 for j in range(len(four_stroke_aux_db[i]["GenP"])):
-                    if four_stroke_aux_db[i]["GenP"][j] > self.hotel_load_max:
+                    if four_stroke_aux_db[i]["GenP"][j] > self.hotel_load_max and got == False:
                         # select this aux_engine
                         aux_index = i
                         aux_pistons = j
-                        break
-                    else: # how to break out of a nested for loop!!
-                        continue
-                    break
+                        got = True
+#            for i in range(len(four_stroke_aux_db)):
+#                for j in range(len(four_stroke_aux_db[i]["GenP"])):
+#                    if four_stroke_aux_db[i]["GenP"][j] > self.hotel_load_max:
+#                        # select this aux_engine
+#                        aux_index = i
+#                        aux_pistons = j
+#                        break
+#                    else: # how to break out of a nested for loop!!
+#                        continue
+#                    break
+            # number of auxiliary engines required
+            aux_mod_engines_required = 1
             # store selected engine
             self.aux_engine_designation = str(four_stroke_aux_db[aux_index]["Cyl"][aux_pistons]) + ' Cylinder ' + four_stroke_aux_db[aux_index]["designation"]
+            
         else:
             # more than one aux_engine is required to satisfy the maximum
             # Hotel Load requirement
             # divide the hotel load up into factors of the largest generator power
 
-            # number of Maximum Power aux_engines required
+            # number of maximum power aux_engines required
             aux_max_engines_required = int(self.hotel_load_max/aux_max)
 
             # the remaining amount of generator power required
-            aux_mod_engines_required = self.hotel_load_max%aux_max
+            aux_mod_power_required = self.hotel_load_max%aux_max
+            aux_mod_engines_required = 1
 
             # run through the database of gensets, and select the smallest one
             # which satisfies the remaining hotel load requirements
+            # it would be more efficient to break out of the nested for loops,
+            # but it seems hard work in python!
+            got = False
             for i in range(len(four_stroke_aux_db)):
                 for j in range(len(four_stroke_aux_db[i]["GenP"])):
                     aux_engine_max = four_stroke_aux_db[i]["GenP"][j] + \
                                  0.15*four_stroke_aux_db[i]["GenP"][j]
-                    if aux_engine_max > aux_mod_engines_required:
+                    if aux_engine_max > aux_mod_power_required and got == False:
                         # select this aux_engine
                         aux_index = i
                         aux_pistons = j
-                        break
-                    else: # how to break out of a nested for loop!!
-                        continue
-                    break
+                        got = True
+#            for i in range(len(four_stroke_aux_db)):
+#                for j in range(len(four_stroke_aux_db[i]["GenP"])):
+#                    aux_engine_max = four_stroke_aux_db[i]["GenP"][j] + \
+#                                 0.15*four_stroke_aux_db[i]["GenP"][j]
+#                    if aux_engine_max > aux_mod_power_required:
+#                        # select this aux_engine
+#                        aux_index = i
+#                        aux_pistons = j
+#                        break
+#                    else: # how to break out of a nested for loop!!
+#                        continue
+#                    break
 
             # store selected engine            
             self.aux_engine_designation = str(aux_max_engines_required) + ' x ' + str(four_stroke_aux_db[index_max]["Cyl"][len(four_stroke_aux_db[index_max]["GenP"])-1]) + ' Cylinder ' + four_stroke_aux_db[index_max]["designation"] + ' and a ' + str(four_stroke_aux_db[aux_index]["Cyl"][aux_pistons]) + ' Cylinder ' + four_stroke_aux_db[aux_index]["designation"]
+
+        # calcualte total number of auxiliary engines installed
+        # TODO redundancy should be taken into account. ie extra engines
+        self.total_aux_engines_required = aux_max_engines_required + aux_mod_engines_required
+        # calculate total installed MCR _generator_ power (ie includes efficiency loss)
+        self.total_aux_mcr = aux_max_engines_required*four_stroke_aux_db[index_max]["GenP"][len(four_stroke_aux_db[index_max]["GenP"])-1] + aux_mod_engines_required*four_stroke_aux_db[aux_index]["GenP"][aux_pistons]
 
         # The aux_engines have now been selected, based upon design power
         # Estimate how they perform when running at service power
@@ -679,7 +739,7 @@ class powering_specs:
             # only one aux_engine is installed
             # calculate percentage load usage
 
-            # chosen engine's maximum generator power ORIGINALLY EGPmax
+            # chosen engine's maximum generator power
             aux_mod_max = four_stroke_aux_db[aux_index]["GenP"][aux_pistons] + \
                       0.15*four_stroke_aux_db[aux_index]["GenP"][aux_pistons]
 
@@ -687,7 +747,7 @@ class powering_specs:
                              aux_mod_max*100.0)
             if aux_pc_load < 0.0:
                 sys.exit("Generator is overloaded... Aborting.")
-                
+            
             # create a spline through the data-points of Generator Power and SFOC
             # for the selected aux_engine
             spline = InterpolatedUnivariateSpline(four_stroke_aux_db[aux_index]["Load"], \
@@ -695,6 +755,21 @@ class powering_specs:
             # calculate SFOC at service load through inter/extrapolation of spline, for given fuel type
             self.sfoc_aux_at_run = fuel_type_sfoc(self.fuel_type_aux, spline(aux_pc_load))
 
+#            # plot %SMCR vs SFOC
+#            # go from 30% to 105% SMCR
+#            plot = True
+#            if plot == True:
+#                x_num = np.linspace(four_stroke_aux_db[aux_index]["Load"][0], four_stroke_aux_db[aux_index]["Load"][4], 100)
+#                y_num = spline(x_num)
+#                plt.figure()
+#                plt.plot(x_num, y_num)
+#                plt.plot(aux_pc_load, self.sfoc_aux_at_run, 'ro')
+#                plt.title('SFOC vs % Engine Load for Auxiliary Engine')
+#                plt.ylabel('SFOC [g/kWh]')
+#                plt.xlabel('% of Maximum Engine Power')
+#                plt.grid(True)
+#                plt.savefig('Part_Load_SFOC_Curve_aux.eps')
+#                plt.show()
 
         else: # more than one aux_engine is installed
             # number of Maximum Power aux_engines required for service load
@@ -703,14 +778,11 @@ class powering_specs:
             sfoc_aux_hfo = aux_max_engines_service*four_stroke_aux_db[index_max]["SFOC"] \
                    [len(four_stroke_aux_db[index_max]["SFOC"])-1]
 
-            sfoc_aux = fuel_type_sfoc(self.fuel_type_aux, spline(sfoc_aux_hfo))
-
             # remaining power required for service load
             aux_mod_engines_service = self.hotel_load_service%aux_max
 
             # now for the rest of the engines
             if aux_max_engines_service < aux_max_engines_required:
-                print("aux_max_engines_service =", aux_max_engines_service)
                 # there are more maximum sized engines to load up
                 # calculate percentage load usage
 
@@ -729,9 +801,13 @@ class powering_specs:
                                                   ["Load"],
                                                   four_stroke_aux_db[aux_index]
                                                   ["SFOC"], k=2)
+                
                 # calculate total SFOC at service load through
+                # inter/extrapolation of spline
+                sfoc_aux = fuel_type_sfoc(self.fuel_type_aux, spline(sfoc_aux_hfo))
                 self.sfoc_aux_at_run = sfoc_aux+fuel_type_sfoc(self.fuel_type_aux, spline(aux_pc_load))
             else:
+                print("Filling up last engine")
                 # the last remaining engine is to be loaded up
                 # calculate percentage load usage
                 # chosen engine's maximum generator power
@@ -755,7 +831,9 @@ class powering_specs:
                                                       ["SFOC"], k=2)
                 # calculate total SFOC at service load through
                 # inter/extrapolation of spline
+                sfoc_aux = fuel_type_sfoc(self.fuel_type_aux, spline(sfoc_aux_hfo))
                 self.sfoc_aux_at_run = sfoc_aux+fuel_type_sfoc(self.fuel_type_aux, spline(aux_pc_load))
+
 
     def select_main_engine(self):
         """
@@ -786,23 +864,79 @@ class powering_specs:
         #CO2_EF = 3.1141
         co2_main_emission_factor = fuel_list[self.fuel_type_main][2]
         co2_aux_emission_factor = fuel_list[self.fuel_type_aux][2]
-
+        
+        # estimate specific CO_2 emissions [g/kWh]
+        self.specific_co2_main_engine = self.sfoc_main_at_run*co2_main_emission_factor
+        self.specific_co2_aux_engine = self.sfoc_aux_at_run*co2_aux_emission_factor
+        self.specific_co2_total = self.specific_co2_main_engine+self.specific_co2_aux_engine
+        
         # calculate fuel oil consumption [t/h]
         foc_main = self.sfoc_main_at_run*self.p_run/1.0E+06
         foc_aux = self.sfoc_aux_at_run*self.hotel_load_service/1.0E+06
          
-        # estimate CO_2 emissions [t/h]
+        # estimate absolute CO_2 emissions [t/h]
         self.co2_main_engine = foc_main*co2_main_emission_factor
         self.co2_aux_engine = foc_aux*co2_aux_emission_factor
         self.co2_total = self.co2_main_engine+self.co2_aux_engine
+
+    def delta_emissions(self):
+        """
+        Estimate change in emissions through use of various technologies.
+        Changes are in %, so for example, total reduction in NOX would be:
+        total_reduction_nox = nox_emissions + delta_nox*nox_emissions
+
+        source for estimations: http://cleantech.cnss.no/
+        values are averaged unless otherwise stated
+        """
+
+        # deltas are cumulative so extreme caution is needed to avoid mutually
+        # exclusive technologies!
+        # TODO make checks on the above
+        if self.green_technologies[0] == True: # Low Sulphur Fuel
+            self.delta_SOX = self.delta_SOX + (-0.800)
+
+        if self.green_technologies[1] == True: # Scrubber fitted?
+            self.delta_SOX = self.delta_SOX + (-0.925)
+
+        if  self.green_technologies[2] == True: # Direct Water Injection
+            self.delta_NOX = self.delta_NOX + (-0.600)
+            self.delta_CO2 = self.delta_CO2 + (+0.02)
+
+        if self.green_technologies[3] == True: # Exhaust Gas Recirculation
+            self.delta_NOX = self.delta_NOX + (-0.525)
+
+        if self.green_technologies[4] == True: # Selective Catalytic Reduction
+            self.delta_NOX = self.delta_NOX + (-0.945)
+
+        if self.green_technologies[5] == True:# Humid Air Motor
+            self.delta_NOX = self.delta_NOX + (-0.500)
             
+        if self.green_technologies[6] == True: # Combustion Air Saturation System
+            self.delta_NOX = self.delta_NOX + (-0.450)
+
+        if self.green_technologies[7] == True: # Water in fuel emulsion
+            self.delta_NOX = self.delta_NOX + (-0.350)
+
+        if self.green_technologies[8] == True: # Internal Engine Modification
+            self.delta_NOX = self.delta_NOX + (-0.350)
 
 
-def run_gem(case_study, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design, hotel_load_service, pto, eta_pto, cpp, sea_margin, main_engine_margin, light_running_factor, aux_engine_margin, main_engine_type, aux_engine_type, fuel_type_main, fuel_type_aux):
+def run_gem(case_study, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design,
+            hotel_load_service, pto, eta_pto, cpp, sea_margin,
+            main_engine_margin, light_running_factor, aux_engine_margin,
+            main_engine_type, aux_engine_type, fuel_type_main, fuel_type_aux,
+            green_technologies):
     """
+    This function is the main routine which pulls together all the functions
+    which make up the Generic Engine Model
     """
-    # example for example, Maersk Batam
-    ship1 = powering_specs(q_trial, rpm_trial, q_run, rpm_run, hotel_load_design, hotel_load_service, pto, eta_pto, cpp, sea_margin, main_engine_margin, light_running_factor, aux_engine_margin, main_engine_type, aux_engine_type, fuel_type_main, fuel_type_aux)
+    # ship1 instance
+    ship1 = powering_specs(q_trial, rpm_trial, q_run, rpm_run,
+                           hotel_load_design, hotel_load_service, pto, eta_pto,
+                           cpp, sea_margin, main_engine_margin,
+                           light_running_factor, aux_engine_margin,
+                           main_engine_type, aux_engine_type, fuel_type_main,
+                           fuel_type_aux, green_technologies)
 
     # calculate main engine powering requirements
     ship1.main_engine_requirements()
@@ -818,25 +952,62 @@ def run_gem(case_study, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design, h
 
     # estimate C0_2 emissions
     ship1.estimate_co2()
+
+    # estimate deltas in emissions from using different green technologies
+    ship1.delta_emissions()
     
-    # print out some stuff
+    # print out some values
     print()
     print(case_study)
     for i in range(0, len(case_study)):
         print("=", end="")
     print()
-    print("Main Propulsion Engine:", ship1.main_engine_designation)
-    print("Auxiliary Engine(s):", ship1.aux_engine_designation)
+    print("Main Propulsion Engine:", ship1.main_engine_designation, ", MCR =", str.format('{0:.3f}', ship1.p_mcr), "kW")
+    print("Auxiliary Engine(s):", ship1.aux_engine_designation, ", MCR =", str.format('{0:.3f}', ship1.total_aux_mcr), "kW")
+    print("Total Number of Auxiliary Engine(s):", ship1.total_aux_engines_required)
     print()
     print("Main Propulsion Engine Fuel Type:", fuel_list[ship1.fuel_type_main][0])
     print("Auxiliary Engine Fuel Type:", fuel_list[ship1.fuel_type_aux][0])
     print()
-    print("Values are given for actual in-service running performance.\n")
-    print("CO2 from Main Engine:  ", str.format('{0:.3f}', ship1.co2_main_engine), "[t/h]")
-    print("CO2 from Auxiliary Engine(s):", str.format('{0:.3f}', ship1.co2_aux_engine), "[t/h]")
-    print("Total CO2 emissions:   ", str.format('{0:.3f}', ship1.co2_total), "[t/h]")
+    print("Values are given for in-service running conditions.\n")
+#    print("Specific Values")
+#    print("---------------")
+    print("Specific Fuel Oil Consumption of Main Engine: ", ship1.sfoc_main_at_run, "[g/kWh]")
+    #print("Specific Fuel Oil Consumption of Main Engine: ", str.format('{0:.3f}', ship1.sfoc_main_at_run), "[g/kWh]")
+    print("Total Specific Fuel Oil Consumption of Auxiliary Engine(s): ", str.format('{0:.3f}', ship1.sfoc_aux_at_run), "[g/kWh]")
+    print("Total Specific Fuel Oil Consumption: ", str.format('{0:.3f}', ship1.sfoc_main_at_run+ship1.sfoc_aux_at_run), "[g/kWh]")
+    print("Specific CO2 Emissions of Main Engine: ", str.format('{0:.3f}', ship1.specific_co2_main_engine), "[g/kWh]")
+    print("Specific CO2 Emissions of Auxiliary Engine(s): ", str.format('{0:.3f}', ship1.specific_co2_aux_engine), "[g/kWh]")
+    print("Total Specific CO2 Emissions: ", str.format('{0:.3f}', ship1.specific_co2_total), "[g/kWh]")
+#    print()
+#    print("Absolute Values")
+#    print("---------------")
+#    print("Main Engine Fuel Oil Consumption: ", str.format('{0:.3f}', ship1.sfoc_main_at_run*ship1.p_run/1.0E+06), "[t/h]")
+#    print("Fuel Oil Conusmption of Auxiliary Engine(s): ", str.format('{0:.3f}', ship1.sfoc_aux_at_run*hotel_load_service/1.0E+06), "[t/h]")
+#    print("Total Fuel Oil Consumption: ", str.format('{0:.3f}', (ship1.sfoc_main_at_run*ship1.p_run+ship1.sfoc_aux_at_run*hotel_load_service)/1.0E+06), "[t/h]")
+#    print("CO2 from Main Engine:  ", str.format('{0:.3f}', ship1.co2_main_engine), "[t/h]")
+#    print("CO2 from Auxiliary Engine(s):", str.format('{0:.3f}', ship1.co2_aux_engine), "[t/h]")
+#    print("Total CO2 Emissions:   ", str.format('{0:.3f}', ship1.co2_total), "[t/h]")
+    print("==================================================================")
 
     
     # return necessary output
-    # TODO need to return SFOC for main and aux, as well as the delta's in emissions from various clean technologies (which also need to be implimented)
-    return ship1.co2_total
+    # TODO need to return the deltas in emissions from various clean technologies (which also need to be implimented)
+    gem_output = [ship1.p_mcr, # installed main engine power MCR [kW]
+                  ship1.sfoc_main_at_run, # main engine SFOC at running point [t/kWh]
+                  ship1.main_engine_mass, # mass of main engine [kg]
+                  ship1.main_engine_length, # length of main engine [m]
+                  ship1.specific_co2_main_engine, # specific CO2 emissions from main engine [g/kWh]
+                  ship1.total_aux_engines_required, # number of aux engines required
+                  ship1.total_aux_mcr, # installed _generator_ power from aux engines(kW)
+                  ship1.sfoc_aux_at_run, # aux engine SFOC at running point [t/kWh]
+                  ship1.aux_engine_mass, # total mass of aux engines [kg]
+                  ship1.aux_engine_length, # length of aux engine(m)
+                  ship1.specific_co2_aux_engine, # total specific CO2 emissions from aux engine(s) [g/kWh]
+                  ship1.delta_CO2, # change in CO2 emissions from using specified technologies
+                  ship1.delta_SOX, # change in SOX emissions from using specified technologies
+                  ship1.delta_NOX  # change in NOX emissions from using specified technologies
+                  ]
+
+    return gem_output
+
