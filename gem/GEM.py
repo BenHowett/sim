@@ -333,7 +333,7 @@ class powering_specs:
         self.p_mcr = 0.0
         self.p_service = 0.0
 
-        self.hotel_load_max = 0.0
+        self.hotel_load_max = 0.0 # TODO change the word hotel throughout
         self.total_aux_engines_required = 0
         self.total_aux_mcr = 0.0
         
@@ -350,11 +350,10 @@ class powering_specs:
         self.co2_aux_engine = 0.0
         self.co2_total = 0.0
 
-        # TODO need to implement the mass and length calculations
         self.main_engine_mass = 0.0
-        self.main_engine_length = 0.0
+        self.main_engine_volume = 0.0
         self.aux_engine_mass = 0.0
-        self.aux_engine_length = 0.0
+        self.aux_engine_volume = 0.0
 
         # changes in emissions from use of different green technologies
         self.delta_CO2 = 0.0
@@ -920,6 +919,36 @@ class powering_specs:
         if self.green_technologies[8] == True: # Internal Engine Modification
             self.delta_NOX = self.delta_NOX + (-0.350)
 
+    def dimensions(self):
+        """
+        Estimate mass and volume of main and aux engines.
+        Source: "Design of Propulsion and Electric Power Generation Systems"
+                H.K. Woud and D. Stapersma
+                IMarEST, 2002.
+        Values are averaged from source.
+        """
+
+        # main engine
+        if self.main_engine_type == 1: # slow speed two-stroke
+            self.main_engine_mass = 38.5*self.p_mcr # [kg]
+            self.main_engine_volume = 0.035*self.p_mcr # [m^3]
+        elif self.main_engine_type == 2: # four-stroke medium speed
+            self.main_engine_mass = 12.5*self.p_mcr # [kg]
+            self.main_engine_volume = 0.016*self.p_mcr # [m^3]
+        else: # not implemented yet
+            print("ERROR: Main engine type not yet implimented in dimension calculations. Aborting...")
+            sys.exit(1)
+
+        # aux engine(s)
+        if self.aux_engine_type == 1: # slow speed two-stroke (!)
+            self.aux_engine_mass = 38.5*self.total_aux_mcr # [kg]
+            self.aux_engine_volume = 0.035*self.total_aux_mcr # [m^3]
+        elif self.main_engine_type == 2: # four-stroke high speed (different to medium!)
+            self.aux_engine_mass = 4.15*self.total_aux_mcr # [kg]
+            self.aux_engine_volume = 0.0054*self.total_aux_mcr # [m^3]
+        else: # not implemented yet
+            print("ERROR: Auxiliary engine type not yet implimented in dimension calculations. Aborting...")
+        
 
 def run_gem(case_study, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design,
             hotel_load_service, pto, eta_pto, cpp, sea_margin,
@@ -956,6 +985,9 @@ def run_gem(case_study, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design,
     # estimate deltas in emissions from using different green technologies
     ship1.delta_emissions()
     
+    # estimate mass and volume of main and auxiliary engine(s)
+    ship1.dimensions()
+    
     # print out some values
     print()
     print(case_study)
@@ -968,6 +1000,11 @@ def run_gem(case_study, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design,
     print()
     print("Main Propulsion Engine Fuel Type:", fuel_list[ship1.fuel_type_main][0])
     print("Auxiliary Engine Fuel Type:", fuel_list[ship1.fuel_type_aux][0])
+    print()
+    print("Mass of Main Propulsion Engine:", str.format('{0:.1f}', ship1.main_engine_mass/1.0E+03), "[t]")
+    print("Volume of Main Propulsion Engine:", str.format('{0:.2f}', ship1.main_engine_volume), "[m^3]")
+    print("Total Mass of Auxiliary Engine(s):", str.format('{0:.2f}', ship1.aux_engine_mass/1.0E+03), "[t]")
+    print("Total Volume of Auxiliary Engine(s):", str.format('{0:.2f}', ship1.aux_engine_volume), "[m^3]")
     print()
     print("Values are given for in-service running conditions.\n")
 #    print("Specific Values")
@@ -996,13 +1033,13 @@ def run_gem(case_study, q_trial, rpm_trial, q_run, rpm_run, hotel_load_design,
     gem_output = [ship1.p_mcr, # installed main engine power MCR [kW]
                   ship1.sfoc_main_at_run, # main engine SFOC at running point [t/kWh]
                   ship1.main_engine_mass, # mass of main engine [kg]
-                  ship1.main_engine_length, # length of main engine [m]
+                  ship1.main_engine_volume, # volume of main engine [m^3]
                   ship1.specific_co2_main_engine, # specific CO2 emissions from main engine [g/kWh]
                   ship1.total_aux_engines_required, # number of aux engines required
                   ship1.total_aux_mcr, # installed _generator_ power from aux engines(kW)
                   ship1.sfoc_aux_at_run, # aux engine SFOC at running point [t/kWh]
                   ship1.aux_engine_mass, # total mass of aux engines [kg]
-                  ship1.aux_engine_length, # length of aux engine(m)
+                  ship1.aux_engine_volume, # volume of aux engine [m^3}
                   ship1.specific_co2_aux_engine, # total specific CO2 emissions from aux engine(s) [g/kWh]
                   ship1.delta_CO2, # change in CO2 emissions from using specified technologies
                   ship1.delta_SOX, # change in SOX emissions from using specified technologies

@@ -70,8 +70,9 @@ SCR:         Boolean, Selective Catalytic Reduction used?
 HAM:         Boolean: Humid Air Motor used?
 CASS:        Boolean, Combustion Air Saturation System used?
 WIFE:        Boolean, Water In Fuel Emulsion used?
-IEM:         Boolean, Internal Engine Modification used? N.B. The engines
-             in the current database already incorporate IEM
+IEM:         Boolean, Internal Engine Modification used? N.B. The engines in
+             the current database (Tier II) already incorporate IEM, however a
+             similar approach to this could be used to account for Tier III.
 """
 
 from marinesystemsandengine import engines
@@ -87,10 +88,10 @@ CASE_STUDY = "Test_Case"
 #
 # MAIN ENGINE POWER REQUIREMENTS
 #
-#Q_CALM = 4000.0
-#RPM_CALM = 72.0
-#Q_RUN = 4500.0
-#RPM_RUN = 73.0
+Q_CALM = 4000.0
+RPM_CALM = 72.0
+Q_RUN = 4500.0
+RPM_RUN = 73.0
 #
 #Q_RUN = 5120.9956 # service conditions when Q_CALM = 4000.0
 #RPM_RUN = 75.43364 # service conditions when RPM_CALM = 72.0
@@ -102,10 +103,10 @@ CASE_STUDY = "Test_Case"
 ##Q_RUN = 800.0
 ##RPM_RUN = 78.0
 #
-Q_CALM = 1123.45
-RPM_CALM = 85.0
-Q_RUN = 1123.45
-RPM_RUN = 85.0
+#Q_CALM = 1123.45
+#RPM_CALM = 85.0
+#Q_RUN = 1123.45
+#RPM_RUN = 85.0
 
 #
 # AUXILIARY POWER REQUIREMENTS
@@ -193,8 +194,8 @@ CASS = False
 WIFE = False
 #
 # Internal Engine Modification
-# N.B. The engines in the current database already incorporate these
-# modifications
+# N.B. The engines in the current database (Tier II) already incorporate IEM,
+# however a similar approach to this could be used to account for Tier III.
 # 30-40% reduction in NOX
 # Source: http://cleantech.cnss.no/
 IEM = False

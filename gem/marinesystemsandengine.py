@@ -89,8 +89,9 @@ def engines(case_study, design_torque, design_rpm, operation_torque,
     green_technologies[6]: Boolean, Combustion Air Saturation System used?
     green_technologies[7]: Boolean, Water In Fuel Emulsion used?
     green_technologies[8]: Boolean, Internal Engine Modification used?
-                           N.B. The engines in the current database already
-                           incorporate IEM
+                           N.B. The engines in the current database (Tier II)
+                           already incorporate IEM, however a similar approach
+                           to this could be used to account for Tier III.
 
     OUTPUT
     ------
@@ -98,13 +99,13 @@ def engines(case_study, design_torque, design_rpm, operation_torque,
     engine_output[0]  = installed main engine power MCR [kW]
     engine_output[1]  = main engine SFOC at running point [t/kWh]
     engine_output[2]  = mass of main engine [kg]
-    engine_output[3]  = length of main engine [m]
+    engine_output[3]  = volume of main engine [m^3]
     engine_output[4]  = specific CO2 emissions from main engine [g/kWh]
     engine_output[5]  = number of aux engines required
     engine_output[6]  = installed _generator_ power from aux engines(kW)
     engine_output[7]  = aux engine SFOC at running point [t/kWh]
     engine_output[8]  = total mass of aux engines [kg]
-    engine_output[9]  = length of aux engine(m)
+    engine_output[9]  = total volume of aux engine(m^3)
     engine_output[10] = total specific CO2 emissions from aux engine(s) [g/kWh]
     engine_output[11] = % change in CO2 emission from using green technology
     engine_output[12] = % change in SOX emission from using green technology 
